@@ -28,11 +28,15 @@ for line in terraform_file:
 #print (compute_names)
 
 # Generar los comandos para apagar las VMs
+print("# 2) Apagar las VMs")
 for node in bootstrap_name+control_plane_names+compute_names:
     print("govc vm.power -off /%s/vm/%s/%s" % (vsphere_datacenter, cluster_id, node))
 
+#print("# 3) Setear MAC addressess")
+
 # Generar la configuracion del server DHCP
 # Grabar un archivo dhpcd.conf y mostrar el comando para copiarlo a /etc + start/stop/enable del dhpcd + yum install (suponer que arrancamos de 0) + echo "" > /var/lib/dhpcd/lease
+print("# 4) Configurar y levantar el DHCP server")
 print("vi /etc/dhcp/dhcpd.conf\n" \
 "\n" \
 "systemctl stop dhcpd\n" \
@@ -45,6 +49,7 @@ print("vi /etc/dhcp/dhcpd.conf\n" \
 "systemctl status dhcpd\n")
 
 # Generar los comandos para encender las VMs
+print("# 5) levantar las VMs")
 for node in bootstrap_name+control_plane_names+compute_names:
     print("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, cluster_id, node))
 
