@@ -40,7 +40,6 @@ variable "vm_template" {
 variable "vm_network" {
   type        = "string"
   description = "This is the name of the publicly accessible network for cluster ingress and access."
-  default     = "VM Network"
 }
 
 variable "ipam" {
@@ -78,6 +77,14 @@ variable "machine_cidr" {
   type = "string"
 }
 
+variable "gateway_ip" {
+  type = "string"
+}
+
+variable "dns_ips" {
+  type    = "list"
+}
+
 /////////
 // Bootstrap machine variables
 /////////
@@ -92,8 +99,19 @@ variable "bootstrap_ignition_url" {
 }
 
 variable "bootstrap_ip" {
-  type    = "string"
-  default = ""
+  type    = "list"
+}
+
+variable "bootstrap_name" {
+  type    = "list"
+}
+
+variable "bootstrap_memory" {
+  type    = "list"
+}
+
+variable "bootstrap_cpus" {
+  type    = "list"
 }
 
 ///////////
@@ -111,17 +129,19 @@ variable "control_plane_ignition" {
 
 variable "control_plane_ips" {
   type    = "list"
-  default = []
 }
 
-variable "master_memory" {
-  type = "string"
-  default = "16384"
+variable "control_plane_names" {
+  type    = "list"
 }
 
-variable "master_num_cpus" {
-  type = "string"
-  default = "4"
+
+variable "control_plane_memory" {
+  type    = "list"
+}
+
+variable "control_plane_cpus" {
+  type    = "list"
 }
 
 //////////
@@ -139,15 +159,17 @@ variable "compute_ignition" {
 
 variable "compute_ips" {
   type    = "list"
-  default = []
+}
+
+variable "compute_names" {
+  type    = "list"
 }
 
 variable "compute_memory" {
-  type = "string"
-  default = "8192"
+  type    = "list"
 }
 
-variable "compute_num_cpus" {
-  type = "string"
-  default = "4"
+variable "compute_cpus" {
+  type    = "list"
 }
+

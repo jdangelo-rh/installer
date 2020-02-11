@@ -27,7 +27,7 @@ module "resource_pool" {
 module "bootstrap" {
   source = "./machine"
 
-  name             = "bootstrap"
+  host_names       = ["${var.bootstrap_name}"]
   instance_count   = "${var.bootstrap_complete ? 0 : 1}"
   ignition_url     = "${var.bootstrap_ignition_url}"
   resource_pool_id = "${module.resource_pool.pool_id}"
@@ -39,16 +39,18 @@ module "bootstrap" {
   cluster_domain   = "${var.cluster_domain}"
   ipam             = "${var.ipam}"
   ipam_token       = "${var.ipam_token}"
-  ip_addresses     = ["${compact(list(var.bootstrap_ip))}"]
+  ip_addresses     = ["${var.bootstrap_ip}"]
   machine_cidr     = "${var.machine_cidr}"
-  memory           = "8192"
-  num_cpu          = "4"
+  gateway_ip       = "${var.gateway_ip}"
+  dns_ips          = ["${var.dns_ips}"]
+  memory           = ["${var.bootstrap_memory}"]
+  num_cpu          = ["${var.bootstrap_cpus}"]
 }
 
 module "control_plane" {
   source = "./machine"
 
-  name             = "control-plane"
+  host_names       = ["${var.control_plane_names}"]
   instance_count   = "${var.control_plane_count}"
   ignition         = "${var.control_plane_ignition}"
   resource_pool_id = "${module.resource_pool.pool_id}"
@@ -62,14 +64,16 @@ module "control_plane" {
   ipam_token       = "${var.ipam_token}"
   ip_addresses     = ["${var.control_plane_ips}"]
   machine_cidr     = "${var.machine_cidr}"
-  memory           = "${var.master_memory}"
-  num_cpu          = "${var.master_num_cpus}"
+  gateway_ip       = "${var.gateway_ip}"
+  dns_ips          = ["${var.dns_ips}"]
+  memory           = ["${var.control_plane_memory}"]
+  num_cpu          = ["${var.control_plane_cpus}"]
 }
 
 module "compute" {
   source = "./machine"
 
-  name             = "compute"
+  host_names       = ["${var.compute_names}"]
   instance_count   = "${var.compute_count}"
   ignition         = "${var.compute_ignition}"
   resource_pool_id = "${module.resource_pool.pool_id}"
@@ -83,10 +87,13 @@ module "compute" {
   ipam_token       = "${var.ipam_token}"
   ip_addresses     = ["${var.compute_ips}"]
   machine_cidr     = "${var.machine_cidr}"
-  memory           = "${var.compute_memory}"
-  num_cpu          = "${var.compute_num_cpus}"
+  gateway_ip       = "${var.gateway_ip}"
+  dns_ips          = ["${var.dns_ips}"]
+  memory           = ["${var.compute_memory}"]
+  num_cpu          = ["${var.compute_cpus}"]
 }
 
+/*
 module "dns" {
   source = "./route53"
 
@@ -99,3 +106,5 @@ module "dns" {
   compute_count       = "${var.compute_count}"
   compute_ips         = ["${module.compute.ip_addresses}"]
 }
+*/
+

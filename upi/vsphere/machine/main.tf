@@ -16,11 +16,11 @@ data "vsphere_virtual_machine" "template" {
 resource "vsphere_virtual_machine" "vm" {
   count = "${var.instance_count}"
 
-  name             = "${var.name}-${count.index}"
+  name             = "${var.host_names[count.index]}"
   resource_pool_id = "${var.resource_pool_id}"
   datastore_id     = "${data.vsphere_datastore.datastore.id}"
-  num_cpus         = "${var.num_cpu}"
-  memory           = "${var.memory}"
+  num_cpus         = "${var.num_cpu[count.index]}"
+  memory           = "${var.memory[count.index]}"
   guest_id         = "${data.vsphere_virtual_machine.template.guest_id}"
   folder           = "${var.folder}"
   enable_disk_uuid = "true"
@@ -34,7 +34,7 @@ resource "vsphere_virtual_machine" "vm" {
 
   disk {
     label            = "disk0"
-    size             = 60
+    size             = 120
     thin_provisioned = "${data.vsphere_virtual_machine.template.disks.0.thin_provisioned}"
   }
 

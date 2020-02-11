@@ -1,6 +1,7 @@
 locals {
   network      = "${cidrhost(var.machine_cidr,0)}"
   ip_addresses = ["${coalescelist(var.ip_addresses, data.template_file.ip_address.*.rendered)}"]
+  host_names   = ["${coalescelist(var.host_names, data.template_file.host_names.*.rendered)}"]
 }
 
 data "external" "ip_address" {
@@ -9,7 +10,7 @@ data "external" "ip_address" {
   program = ["bash", "${path.module}/cidr_to_ip.sh"]
 
   query = {
-    hostname   = "${var.name}-${count.index}.${var.cluster_domain}"
+    hostname   = "${local.host_names[count.index]}.${var.cluster_domain}"
     ipam       = "${var.ipam}"
     ipam_token = "${var.ipam_token}"
   }
@@ -28,7 +29,7 @@ resource "null_resource" "ip_address" {
 
   provisioner "local-exec" {
     command = <<EOF
-echo '{"network":"${local.network}","hostname":"${var.name}-${count.index}.${var.cluster_domain}","ipam":"${var.ipam}","ipam_token":"${var.ipam_token}"}' | ${path.module}/cidr_to_ip.sh
+echo '{"network":"${local.network}","hostname":"${local.host_names[count.index]}.${var.cluster_domain}","ipam":"${var.ipam}","ipam_token":"${var.ipam_token}"}' | ${path.module}/cidr_to_ip.sh
 EOF
   }
 
@@ -36,7 +37,8 @@ EOF
     when = "destroy"
 
     command = <<EOF
-curl -s "http://${var.ipam}/api/removeHost.php?apiapp=address&apitoken=${var.ipam_token}&host=${var.name}-${count.index}.${var.cluster_domain}"
+curl -s "http://${var.ipam}/api/removeHost.php?apiapp=address&apitoken=${var.ipam_token}&host=${local.host_names[count.index]}.${var.cluster_domain}"
 EOF
   }
 }
+

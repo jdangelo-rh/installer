@@ -4,7 +4,6 @@ provider "ignition" {
 
 locals {
   mask = "${element(split("/", var.machine_cidr), 1)}"
-  gw   = "${cidrhost(var.machine_cidr,1)}"
 
   ignition_encoded = "data:text/plain;charset=utf-8;base64,${base64encode(var.ignition)}"
 }
@@ -17,7 +16,7 @@ data "ignition_file" "hostname" {
   mode       = "420"
 
   content {
-    content = "${var.name}-${count.index}"
+    content = "${var.host_names[count.index]}"
   }
 }
 
@@ -37,10 +36,11 @@ DEVICE=ens192
 ONBOOT=yes
 IPADDR=${local.ip_addresses[count.index]}
 PREFIX=${local.mask}
-GATEWAY=${local.gw}
+GATEWAY=${var.gateway_ip}
 DOMAIN=${var.cluster_domain}
-DNS1=1.1.1.1
-DNS2=9.9.9.9
+DNS1=${var.dns_ips[0]}
+DNS2=${var.dns_ips[1]}
+DNS3=${var.dns_ips[2]}
 EOF
   }
 }
@@ -77,3 +77,4 @@ data "ignition_config" "ign" {
     "${data.ignition_file.static_ip.*.id[count.index]}",
   ]
 }
+

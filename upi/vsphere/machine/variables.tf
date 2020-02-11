@@ -1,5 +1,5 @@
-variable "name" {
-  type = "string"
+variable "host_names" {
+  type = "list"
 }
 
 variable "instance_count" {
@@ -59,10 +59,20 @@ variable "ipam_token" {
 variable "ip_addresses" {
   type = "list"
 }
+
 variable "memory" {
-  type = "string"
+  type = "list"
 }
 
 variable "num_cpu" {
+  type = "list"
+}
+
+variable "gateway_ip" {
   type = "string"
 }
+
+variable "dns_ips" {
+  type    = "list"
+}
+
