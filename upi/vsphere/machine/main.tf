@@ -24,12 +24,14 @@ resource "vsphere_virtual_machine" "vm" {
   guest_id         = "${data.vsphere_virtual_machine.template.guest_id}"
   folder           = "${var.folder}"
   enable_disk_uuid = "true"
-
+  boot_delay	   = "90000"
+ 
   wait_for_guest_net_timeout  = "0"
   wait_for_guest_net_routable = "false"
 
   network_interface {
-    network_id = "${data.vsphere_network.network.id}"
+    network_id     = "${data.vsphere_network.network.id}"
+    use_static_mac = "true"
   }
 
   disk {
