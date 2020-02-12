@@ -10,18 +10,20 @@ import sys
 import stat
 import datetime
 
-# Validar prerequisitos: terraform, govc, dig, dhcpd
+### Validar prerequisitos: terraform, govc, dig, dhcpd
+print ("\n## Validando prerequisitos: terraform, govc, dig, dhcpd")
 for cmd in ["terraform", "govc", "dig", "dhcpd"]:
     if os.system("which " + cmd) != 0:
         print(" * ERROR * el comando: " + cmd + " no se encuentra instalado")
 
 
-# Primer paso es importar el archivo
+### Proceso el archivo leyendo las variables del mismo, por suerte el formato de variables de terraform es igual al de python
 filename = sys.argv[1]
 
 terraform_file = open(filename, "r")
 
-# Proceso el archivo leyendo las variables del mismo, por suerte el formato de variables de terraform es igual al de python
+print("\n## Procesando archivo: " + filename)
+
 for line in terraform_file:
     #print(line)
     
@@ -33,23 +35,22 @@ for line in terraform_file:
       continue
 
     exec(line)
-    
-#print (compute_names)
 
-# Generar los comandos para apagar las VMs
-print("\n# 2) Apagar las VMs")
+
+### Genero los comandos para apagar las VMs
+print("\n## Apagado de las VMs")
 for node in bootstrap_name+control_plane_names+compute_names:
-    continue
-    #print("govc vm.power -off /%s/vm/%s/%s" % (vsphere_datacenter, cluster_id, node))
+    print("govc vm.power -off /%s/vm/%s/%s" % (vsphere_datacenter, cluster_id, node))
 
-#print("\n# 3) Setear MAC addressess")
+
+### Genero los comandos para setar las MAC Address
+print("\n## Setear MAC addressess")
+
 node_mac = {}
 for node in bootstrap_name+control_plane_names+compute_names:
-    #govc_proc = subprocess.Popen("govc device.info -vm='/%s/vm/%s/%s' ethernet-0" % (vsphere_datacenter, cluster_id, node), stdout=subprocess.PIPE, shell=True)
+    govc_proc = subprocess.Popen("govc device.info -vm='/%s/vm/%s/%s' ethernet-0" % (vsphere_datacenter, cluster_id, node), stdout=subprocess.PIPE, shell=True)
     
     node_mac[node] = "00:00:00:00:00:00"
-    
-    continue
     
     for line in iter(govc_proc.stdout.readline, ""):
         #print line
@@ -58,21 +59,27 @@ for node in bootstrap_name+control_plane_names+compute_names:
         if (mac_re):
             mac_address = line.split(": ")[1].strip()
             node_mac[node] = mac_address
-            #print ("govc vm.network.change -vm /%s/vm/%s/%s -net '%s' -net.address %s ethernet-0" % (vsphere_datacenter, cluster_id, node, vm_network, mac_address))
+            print ("govc vm.network.change -vm /%s/vm/%s/%s -net '%s' -net.address %s ethernet-0" % (vsphere_datacenter, cluster_id, node, vm_network, mac_address))
     
 
-# Generar la configuracion del server DHCP
+### Genero la configuracion del server DHCP
 # Grabar un archivo dhpcd.conf y mostrar el comando para copiarlo a /etc + start/stop/enable del dhpcd + yum install (suponer que arrancamos de 0) + echo "" > /var/lib/dhpcd/lease
-print("\n# 4) Configurar y levantar el DHCP server")
-
-# Hacer backup del archivo dhcpd.conf
-#os.system("cp /etc/dhcp/dhcpd.conf /etc/dhcp/dhcpd.conf-" + datetime.datetime.now().strftime("%Y%m%d"))
+print("\n## Configurando y levantando el DHCP server")
 
 # Crear un archivo de configuracion /etc/dhcp/dhcpd.conf con las MAC Address
+dhcpd_file = os.open("dhcpd.conf", os.O_RDWR | os.O_CREAT)
 
-#dhcpd_file = os.open("dhcpd.conf", os.O_RDWR | os.O_CREAT)
+# Generacion de mapping entre hostnames y direcciones IP
+hostname_ip = {}
 
-#ret = os.write(dhcpd_file, \
+for i in range(len(bootstrap_name)):
+    hostname_ip[bootstrap_name[i]] = bootstrap_ip[i]
+
+for i in range(len(control_plane_names)):
+    hostname_ip[control_plane_names[i]] = control_plane_ips[i]
+
+for i in range(len(compute_names)):
+    hostname_ip[compute_names[i]] = compute_ips[i]
 
 # Obtengo la subred y la mascara
 def cidr_to_netmask(cidr):
@@ -109,49 +116,49 @@ subnet %s netmask %s {
 ''' % (cluster_domain, dns_ips[0], dns_ips[1], dns_ips[2], subnet, netmask, gateway_ip)
 
 for node in bootstrap_name+control_plane_names+compute_names:
-    test = \
+    dhcpd_conf += \
     '''
     host %s {
       hardware ethernet %s;
       option host-name "%s";
       fixed-address %s;
     }
-    ''' % (node, node_mac[node], node + "." + cluster_domain, "192.168.140.3")
+    ''' % (node, node_mac[node], node + "." + cluster_domain, hostname_ip[node])
     #print(node + " -> " + node_mac[node])
     #print (test)
-    
-print(dhcpd_conf)
 
-# Writing text
-#ret = os.write(dhcpd_file, "This is test")
+dhcpd_conf += "\n"
+#print(dhcpd_conf)
 
-# Close opened file
-#os.close(dhcpd_file)
+ret = os.write(dhcpd_file, dhcpd_conf)
 
-#os.chmod("dhcpd.conf", stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+os.close(dhcpd_file)
 
+os.chmod("dhcpd.conf", stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+
+# Hacer backup del archivo dhcpd.conf
+os.system("cp /etc/dhcp/dhcpd.conf /etc/dhcp/dhcpd.conf-" + datetime.datetime.now().strftime("%Y%m%d%M%S"))
+
+# Copiar el archivo generado a /etc/dhcp/dhcpd.conf
+print ("cp dhcpd.conf /etc/dhcp/dhcpd.conf")
 
 # Detener el dhcpd
-#"systemctl stop dhcpd"
+print ("systemctl stop dhcpd")
 
 # Borrar los leases
-#"echo '' > /var/lib/dhcpd/dhcpd.leases"
-#"echo '' > /var/lib/dhcpd/dhcpd.leases~"
+print ("echo '' > /var/lib/dhcpd/dhcpd.leases")
+print ("echo '' > /var/lib/dhcpd/dhcpd.leases~")
 
 # Iniciar el dhcpd
-#"systemctl start dhcpd"
+print ("systemctl start dhcpd")
 
 # Mostrar el status
-#"systemctl status dhcpd"
+print ("systemctl status dhcpd")
 
 
-# Generar los comandos para encender las VMs
-print("\n# 5) levantar las VMs")
+### Genero los comandos para encender las VMs
+print("\n## Levantar las VMs")
 for node in bootstrap_name+control_plane_names+compute_names:
-    continue
-    #print("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, cluster_id, node))
-
-# Generar los comandos para planchar las MAC Address
-
+    print("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, cluster_id, node))
 
 
