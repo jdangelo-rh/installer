@@ -15,6 +15,7 @@ print ("\n## Validando prerequisitos: terraform, govc, dig, dhcpd")
 for cmd in ["terraform", "govc", "dig", "dhcpd"]:
     if os.system("which " + cmd) != 0:
         print(" * ERROR * el comando: " + cmd + " no se encuentra instalado")
+        sys.exit(1)
 
 
 ### Proceso el archivo leyendo las variables del mismo, por suerte el formato de variables de terraform es igual al de python
@@ -43,6 +44,12 @@ for node in bootstrap_name+control_plane_names+compute_names:
     print("govc vm.power -off /%s/vm/%s/%s" % (vsphere_datacenter, cluster_id, node))
 
 
+### Genero los comandos para encender las VMs
+print("\n## Levantar las VMs")
+for node in bootstrap_name+control_plane_names+compute_names:
+    print("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, cluster_id, node))
+
+
 ### Genero los comandos para setar las MAC Address
 print("\n## Setear MAC addressess")
 
@@ -62,12 +69,9 @@ for node in bootstrap_name+control_plane_names+compute_names:
             print ("govc vm.network.change -vm /%s/vm/%s/%s -net '%s' -net.address %s ethernet-0" % (vsphere_datacenter, cluster_id, node, vm_network, mac_address))
     
 
-### Genero la configuracion del server DHCP
-# Grabar un archivo dhpcd.conf y mostrar el comando para copiarlo a /etc + start/stop/enable del dhpcd + yum install (suponer que arrancamos de 0) + echo "" > /var/lib/dhpcd/lease
-print("\n## Configurando y levantando el DHCP server")
 
-# Crear un archivo de configuracion /etc/dhcp/dhcpd.conf con las MAC Address
-dhcpd_file = os.open("dhcpd.conf", os.O_RDWR | os.O_CREAT)
+### Verificar que los registros DNS esten bien
+print("\n## Verificando registros DNS")
 
 # Generacion de mapping entre hostnames y direcciones IP
 hostname_ip = {}
@@ -80,6 +84,19 @@ for i in range(len(control_plane_names)):
 
 for i in range(len(compute_names)):
     hostname_ip[compute_names[i]] = compute_ips[i]
+
+
+for node in bootstrap_name+control_plane_names+compute_names:
+    continue
+
+sys.exit(1)
+
+### Genero la configuracion del server DHCP
+# Grabar un archivo dhpcd.conf y mostrar el comando para copiarlo a /etc + start/stop/enable del dhpcd + yum install (suponer que arrancamos de 0) + echo "" > /var/lib/dhpcd/lease
+print("\n## Configurando y levantando el DHCP server")
+
+# Crear un archivo de configuracion /etc/dhcp/dhcpd.conf con las MAC Address
+dhcpd_file = os.open("dhcpd.conf", os.O_RDWR | os.O_CREAT)
 
 # Obtengo la subred y la mascara
 def cidr_to_netmask(cidr):
@@ -154,11 +171,4 @@ print ("systemctl start dhcpd")
 
 # Mostrar el status
 print ("systemctl status dhcpd")
-
-
-### Genero los comandos para encender las VMs
-print("\n## Levantar las VMs")
-for node in bootstrap_name+control_plane_names+compute_names:
-    print("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, cluster_id, node))
-
 
