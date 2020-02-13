@@ -85,13 +85,14 @@ for i in range(len(control_plane_names)):
 for i in range(len(compute_names)):
     hostname_ip[compute_names[i]] = compute_ips[i]
 
+# Verificacion de registros DNS directo y reverso
 for node in bootstrap_name+control_plane_names+compute_names:
     dig_proc = subprocess.Popen("dig %s.%s +short" % (node, cluster_domain), stdout=subprocess.PIPE, shell=True)
 
     found = False
 
     print ("dig %s.%s +short" % (node, cluster_domain) + " <=> " + hostname_ip[node])
-    
+
     for line in iter(dig_proc.stdout.readline, ""):
         if line.strip() == hostname_ip[node]:
           found = True
@@ -107,7 +108,7 @@ for node in bootstrap_name+control_plane_names+compute_names:
 
     node_fqdn = node + "." + cluster_domain + "."
     print ("dig -x %s +short" % (hostname_ip[node]) + " <=> " + node_fqdn)
-    
+
     for line in iter(digx_proc.stdout.readline, ""):
         if line.strip() == node_fqdn:
           found = True
@@ -119,6 +120,7 @@ for node in bootstrap_name+control_plane_names+compute_names:
 
 print ("\nRegistros DNS A y reverso *OK*")
 
+# Verificacion de registros etcd
 print("\n## Verificacion de registros etcd")
 for i in range(len(control_plane_names)):
     dig_proc = subprocess.Popen("dig etcd-%s.%s +short" % (i, cluster_domain), stdout=subprocess.PIPE, shell=True)
@@ -135,11 +137,12 @@ for i in range(len(control_plane_names)):
 
 print ("\nRegistros DNS etcd *OK*")
 
-
+# Verificacion de registros SRV
 print("\n## Verificacion de registros SRV")
 print ("dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain)
 os.system("dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain)
 
+# Verificacion de APIs
 print("\n## Verificacion de APIs")
 print ("dig api.%s +short" % cluster_domain)
 os.system("dig api.%s +short" % cluster_domain)
@@ -230,4 +233,5 @@ print ("systemctl start dhcpd")
 
 # Mostrar el status
 print ("systemctl status dhcpd")
+
 
