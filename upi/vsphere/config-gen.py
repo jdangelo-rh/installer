@@ -15,7 +15,7 @@ print ("\n## Validando prerequisitos: terraform, govc, dig, dhcpd")
 for cmd in ["terraform", "govc", "dig", "dhcpd"]:
     if os.system("which " + cmd) != 0:
         print(" * ERROR * el comando: " + cmd + " no se encuentra instalado")
-        sys.exit(1)
+        #sys.exit(1)
 
 
 ### Proceso el archivo leyendo las variables del mismo, por suerte el formato de variables de terraform es igual al de python
@@ -87,7 +87,45 @@ for i in range(len(compute_names)):
 
 
 for node in bootstrap_name+control_plane_names+compute_names:
-    continue
+    dig_proc = subprocess.Popen("dig %s.%s +short" % (node, cluster_domain), stdout=subprocess.PIPE, shell=True)
+
+    found = False
+
+    for line in iter(dig_proc.stdout.readline, ""):
+        if line == hostname_ip[node]:
+          found = True
+
+    if found == False:
+      print (" * ERROR * fallo la verificacion de DNS del host: " + node)
+      #sys.exit(1)
+
+    digx_proc = subprocess.Popen("dig -x %s +short" % (hostname_ip[node]), stdout=subprocess.PIPE, shell=True)
+
+    found = False
+
+    for line in iter(digx_proc.stdout.readline, ""):
+        if line == node + "" + cluster_domain:
+          found = True
+
+    if found == False:
+      print (" * ERROR * fallo la verificacion de DNS *reverso* del host: " + node)
+      #sys.exit(1)
+
+
+print ("Registros DNS A y reverso *OK*")
+
+print("## Verificacion de registros etcd")
+os.system("dig etcd-0.%s +short" % cluster_domain)
+os.system("dig etcd-1.%s +short" % cluster_domain)
+os.system("dig etcd-2.%s +short" % cluster_domain)
+
+print("## Verificacion de registros SRV")
+os.system("dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain)
+
+print("## Verificacion de APIs")
+os.system("dig api.%s +short" % cluster_domain)
+os.system("dig api-int.%s +short" % cluster_domain)
+os.system("dig *.apps.%s +short" % cluster_domain)
 
 sys.exit(1)
 
