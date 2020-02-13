@@ -27,7 +27,7 @@ print("\n## Procesando archivo: " + filename)
 
 for line in terraform_file:
     #print(line)
-    
+
     comment = re.search("^//", line)
     control_plane_ignition = re.search("END_OF_MASTER_IGNITION", line)
     compute_ignition = re.search("END_OF_WORKER_IGNITION", line)
@@ -56,18 +56,18 @@ print("\n## Setear MAC addressess")
 node_mac = {}
 for node in bootstrap_name+control_plane_names+compute_names:
     govc_proc = subprocess.Popen("govc device.info -vm='/%s/vm/%s/%s' ethernet-0" % (vsphere_datacenter, cluster_id, node), stdout=subprocess.PIPE, shell=True)
-    
+
     node_mac[node] = "00:00:00:00:00:00"
-    
+
     for line in iter(govc_proc.stdout.readline, ""):
         #print line
         mac_re = re.search("MAC Address", line)
-        
+
         if (mac_re):
             mac_address = line.split(": ")[1].strip()
             node_mac[node] = mac_address
             print ("govc vm.network.change -vm /%s/vm/%s/%s -net '%s' -net.address %s ethernet-0" % (vsphere_datacenter, cluster_id, node, vm_network, mac_address))
-    
+
 
 
 ### Verificar que los registros DNS esten bien
@@ -85,49 +85,70 @@ for i in range(len(control_plane_names)):
 for i in range(len(compute_names)):
     hostname_ip[compute_names[i]] = compute_ips[i]
 
-
 for node in bootstrap_name+control_plane_names+compute_names:
     dig_proc = subprocess.Popen("dig %s.%s +short" % (node, cluster_domain), stdout=subprocess.PIPE, shell=True)
 
     found = False
 
+    print ("dig %s.%s +short" % (node, cluster_domain) + " <=> " + hostname_ip[node])
+    
     for line in iter(dig_proc.stdout.readline, ""):
-        if line == hostname_ip[node]:
+        if line.strip() == hostname_ip[node]:
           found = True
 
     if found == False:
-      print (" * ERROR * fallo la verificacion de DNS del host: " + node)
-      #sys.exit(1)
+        print (" * ERROR * fallo la verificacion de DNS del host: " + node)
+        #os.system("dig %s.%s +short" % (node, cluster_domain))
+        sys.exit(1)
 
     digx_proc = subprocess.Popen("dig -x %s +short" % (hostname_ip[node]), stdout=subprocess.PIPE, shell=True)
 
     found = False
 
+    node_fqdn = node + "." + cluster_domain + "."
+    print ("dig -x %s +short" % (hostname_ip[node]) + " <=> " + node_fqdn)
+    
     for line in iter(digx_proc.stdout.readline, ""):
-        if line == node + "" + cluster_domain:
+        if line.strip() == node_fqdn:
           found = True
 
     if found == False:
-      print (" * ERROR * fallo la verificacion de DNS *reverso* del host: " + node)
-      #sys.exit(1)
+        print (" * ERROR * fallo la verificacion de DNS *reverso* del host: " + node)
+        #os.system("dig -x %s +short" % (hostname_ip[node]))
+        sys.exit(1)
+
+print ("\nRegistros DNS A y reverso *OK*")
+
+print("\n## Verificacion de registros etcd")
+for i in range(len(control_plane_names)):
+    dig_proc = subprocess.Popen("dig etcd-%s.%s +short" % (i, cluster_domain), stdout=subprocess.PIPE, shell=True)
+
+    found = False
+
+    for line in iter(dig_proc.stdout.readline, ""):
+        if line.strip() == hostname_ip[control_plane_names[i]]:
+          found = True
+
+    if found == False:
+      print (" * ERROR * fallo la verificacion de DNS *reverso* del host: " + control_plane_names[i])
+      sys.exit(1)
+
+print ("\nRegistros DNS etcd *OK*")
 
 
-print ("Registros DNS A y reverso *OK*")
-
-print("## Verificacion de registros etcd")
-os.system("dig etcd-0.%s +short" % cluster_domain)
-os.system("dig etcd-1.%s +short" % cluster_domain)
-os.system("dig etcd-2.%s +short" % cluster_domain)
-
-print("## Verificacion de registros SRV")
+print("\n## Verificacion de registros SRV")
+print ("dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain)
 os.system("dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain)
 
-print("## Verificacion de APIs")
+print("\n## Verificacion de APIs")
+print ("dig api.%s +short" % cluster_domain)
 os.system("dig api.%s +short" % cluster_domain)
-os.system("dig api-int.%s +short" % cluster_domain)
-os.system("dig *.apps.%s +short" % cluster_domain)
 
-sys.exit(1)
+print ("dig api-int.%s +short" % cluster_domain)
+os.system("dig api-int.%s +short" % cluster_domain)
+
+print ("dig *.apps.%s +short" % cluster_domain)
+os.system("dig *.apps.%s +short" % cluster_domain)
 
 ### Genero la configuracion del server DHCP
 # Grabar un archivo dhpcd.conf y mostrar el comando para copiarlo a /etc + start/stop/enable del dhpcd + yum install (suponer que arrancamos de 0) + echo "" > /var/lib/dhpcd/lease
