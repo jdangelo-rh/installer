@@ -182,6 +182,8 @@ dhcpd_conf = \
 option domain-name "%s";
 option domain-name-servers %s, %s, %s;
 
+option ntp-servers %s;
+
 default-lease-time 600;
 max-lease-time 7200;
 
@@ -192,7 +194,7 @@ log-facility local7;
 subnet %s netmask %s {
     option routers %s;
 }
-''' % (cluster_domain, dns_ips[0], dns_ips[1], dns_ips[2], subnet, netmask, gateway_ip)
+''' % (cluster_domain, dns_ips[0], dns_ips[1], dns_ips[2], ntp_server, subnet, netmask, gateway_ip)
 
 for node in bootstrap_name+control_plane_names+compute_names:
     dhcpd_conf += \
