@@ -10,6 +10,10 @@ import sys
 import stat
 import datetime
 
+### NTP servers:
+ntp_servers = "192.168.100.1, 192.168.100.2, 192.168.100.4"
+
+
 ### Validar prerequisitos: terraform, govc, dig, dhcpd
 print ("\n## Validando prerequisitos: terraform, govc, dig, dhcpd")
 for cmd in ["terraform", "govc", "dig", "dhcpd"]:
@@ -194,7 +198,7 @@ log-facility local7;
 subnet %s netmask %s {
     option routers %s;
 }
-''' % (cluster_domain, dns_ips[0], dns_ips[1], dns_ips[2], ntp_server, subnet, netmask, gateway_ip)
+''' % (cluster_domain, dns_ips[0], dns_ips[1], dns_ips[2], ntp_servers, subnet, netmask, gateway_ip)
 
 for node in bootstrap_name+control_plane_names+compute_names:
     dhcpd_conf += \
@@ -235,5 +239,9 @@ print ("systemctl start dhcpd")
 
 # Mostrar el status
 print ("systemctl status dhcpd")
+
+# Mostrar los NTP server utilizados
+print ("\n\n!ATENCION! NTP server utilizados: %s" % ntp_servers)
+print ("Si quiere modificarlos debe editar las primeras lineas del script")
 
 
