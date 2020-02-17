@@ -16,7 +16,7 @@ data "ignition_file" "hostname" {
   mode       = "420"
 
   content {
-    content = "${var.host_names[count.index]}"
+    content = "${var.host_names[count.index]}.${var.cluster_domain}"
   }
 }
 
