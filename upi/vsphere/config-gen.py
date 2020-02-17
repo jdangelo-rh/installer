@@ -13,6 +13,7 @@ import datetime
 ### NTP servers:
 # NOTA: Los NTP se configuran despues mediante el machine config, no se configuran mas por DHCP
 #ntp_servers = "192.168.100.1, 192.168.100.2, 192.168.100.4"
+ntp_servers = ""
 
 
 class bcolors:
