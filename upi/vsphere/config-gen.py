@@ -14,11 +14,22 @@ import datetime
 ntp_servers = "192.168.100.1, 192.168.100.2, 192.168.100.4"
 
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
 ### Validar prerequisitos: terraform, govc, dig, dhcpd
 print ("\n## Validando prerequisitos: terraform, govc, dig, dhcpd")
 for cmd in ["terraform", "govc", "dig", "dhcpd"]:
     if os.system("which " + cmd) != 0:
-        print(" * ERROR * el comando: " + cmd + " no se encuentra instalado")
+        print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " el comando: " + cmd + " no se encuentra instalado")
         #sys.exit(1)
 
 
@@ -102,7 +113,7 @@ for node in bootstrap_name+control_plane_names+compute_names:
           found = True
 
     if found == False:
-        print (" * ERROR * fallo la verificacion de DNS del host: " + node)
+        print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " fallo la verificacion de DNS del host: " + node)
         #os.system("dig %s.%s +short" % (node, cluster_domain))
         sys.exit(1)
 
@@ -118,11 +129,11 @@ for node in bootstrap_name+control_plane_names+compute_names:
           found = True
 
     if found == False:
-        print (" * ERROR * fallo la verificacion de DNS *reverso* del host: " + node)
+        print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " fallo la verificacion de DNS *reverso* del host: " + node)
         #os.system("dig -x %s +short" % (hostname_ip[node]))
         sys.exit(1)
 
-print ("\nRegistros DNS A y reverso *OK*")
+print ("\nRegistros DNS A y reverso" + bcolors.OKGREEN + " * OK *" + bcolors.ENDC)
 
 # Verificacion de registros etcd
 print("\n## Verificacion de registros etcd")
@@ -136,10 +147,10 @@ for i in range(len(control_plane_names)):
           found = True
 
     if found == False:
-      print (" * ERROR * fallo la verificacion de DNS *reverso* del host: " + control_plane_names[i])
+      print (bcolors.FAIL + " * ERROR * " +  bcolors.ENDC + "fallo la verificacion de DNS *reverso* del host: " + control_plane_names[i])
       sys.exit(1)
 
-print ("\nRegistros DNS etcd *OK*")
+print ("\nRegistros DNS etcd" + bcolors.OKGREEN + " * OK *" + bcolors.ENDC)
 
 # Verificacion de registros SRV
 print("\n## Verificacion de registros SRV")
@@ -241,7 +252,7 @@ print ("systemctl start dhcpd")
 print ("systemctl status dhcpd")
 
 # Mostrar los NTP server utilizados
-print ("\n\n!ATENCION! NTP server utilizados: %s" % ntp_servers)
-print ("Si quiere modificarlos debe editar las primeras lineas del script")
+print ("\n\n" + bcolors.WARNING + " * !ATENCION! * " + bcolors.ENDC + "NTP server utilizados: %s" % ntp_servers)
+print ("Si quiere modificarlos debe editar las primeras lineas del script\n")
 
 
