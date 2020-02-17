@@ -11,7 +11,8 @@ import stat
 import datetime
 
 ### NTP servers:
-ntp_servers = "192.168.100.1, 192.168.100.2, 192.168.100.4"
+# NOTA: Los NTP se configuran despues mediante el machine config, no se configuran mas por DHCP
+#ntp_servers = "192.168.100.1, 192.168.100.2, 192.168.100.4"
 
 
 class bcolors:
@@ -197,7 +198,7 @@ dhcpd_conf = \
 option domain-name "%s";
 option domain-name-servers %s, %s, %s;
 
-option ntp-servers %s;
+#option ntp-servers %s;
 
 default-lease-time 600;
 max-lease-time 7200;
@@ -252,7 +253,7 @@ print ("systemctl start dhcpd")
 print ("systemctl status dhcpd")
 
 # Mostrar los NTP server utilizados
-print ("\n\n" + bcolors.WARNING + " * !ATENCION! * " + bcolors.ENDC + "NTP server utilizados: %s" % ntp_servers)
-print ("Si quiere modificarlos debe editar las primeras lineas del script\n")
+#print ("\n\n" + bcolors.WARNING + " * !ATENCION! * " + bcolors.ENDC + "NTP server utilizados: %s" % ntp_servers)
+#print ("Si quiere modificarlos debe editar las primeras lineas del script\n")
 
 
