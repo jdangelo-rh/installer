@@ -1,7 +1,72 @@
+# Reference Documentation:
+https://blog.openshift.com/deploying-a-user-provisioned-infrastructure-environment-for-openshift-4-1-on-vsphere/
+https://blog.openshift.com/openshift-4-2-vsphere-install-quickstart/
+https://docs.openshift.com/container-platform/4.3/installing/installing_vsphere/installing-vsphere.html
+
 # Pre-Requisites
 
-* terraform version 0.11.12
-* jq
+* terraform version 0.11.12 (https://releases.hashicorp.com/terraform/0.11.12)
+* VMWare command line tool govc (https://github.com/vmware/govmomi)
+
+# Setup Prerequisites
+Download the terraform executable and install it
+```
+curl -O https://releases.hashicorp.com/terraform/0.11.12/terraform_0.11.12_linux_amd64.zip
+unzip terraform_0.11.12_linux_amd64.zip
+cp terraform /usr/local/bin
+```
+
+Validate version (should be: v0.11.12)
+```
+terraform version
+```
+
+Download and install VMware CLI
+```
+curl -L https://github.com/vmware/govmomi/releases/download/v0.20.0/govc_linux_amd64.gz > govc_0.20.0_linux_amd64.gz
+gunzip govc_0.20.0_linux_amd64.gz
+mv govc_0.20.0_linux_amd64 /usr/local/bin/govc
+chmod +x /usr/local/bin/govc
+```
+
+Configure the CLI with the vSphere settings
+```
+export GOVC_URL='vcenter.example.com'
+export GOVC_USERNAME='admin'
+export GOVC_PASSWORD='passw0rd'
+export GOVC_NETWORK='VM Network'
+export GOVC_DATASTORE='Datastore'
+export GOVC_INSECURE=1 # If the host above uses a self-signed cert
+```
+
+Test the govc CLI settings
+```
+govc ls
+govc about
+```
+
+List resource pools
+```
+$ govc find / -type p
+/Datacenter/host/Cluster/Resources
+```
+
+Download the OVA and import it into the Template Repository
+```
+curl -O https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.3/latest/rhcos-4.3.0-x86_64-vmware.ova
+govc import.ova -name=rhcos-4.3.0 -pool=/Datacenter/host/Cluster/Resources  ./rhcos-4.3.0-x86_64-vmware.ova
+govc vm.markastemplate vm/rhcos-4.3.0
+```
+
+# Build a Cluster
+Download the OpenShift client
+```
+curl -O https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.3.0.tar.gz
+curl -O https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux-4.3.0.tar.gz
+tar xzvf openshift-install-linux-4.3.0.tar.gz
+tar xzvf openshift-client-linux-4.3.0.tar.gz
+```
+
 
 # Build a Cluster
 
