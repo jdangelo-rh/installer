@@ -137,39 +137,42 @@ Clone the OpenShift installer repo
 git clone https://github.com/gojeaqui/installer.git
 ```
 
-3. Fill out a terraform.tfvars file with the ignition configs generated.
-There is an example terraform.tfvars file in this directory named terraform.tfvars.example. 
-The example file is set up for use with the dev cluster running at vcsa.vmware.devcluster.openshift.com. 
-At a minimum, you need to set values for the following variables.
-* cluster_id
-* cluster_domain
-* vsphere_user
-* vsphere_password
-* ipam_token
-* bootstrap_ignition_url
-* control_plane_ignition
-* compute_ignition
-(The bootstrap ignition config must be placed in a location that will be accessible by the bootstrap machine. 
-For example, you could store the bootstrap ignition config in a gist.)
+Change into the terraform scripts folder
+```
+cd installer/upi/vsphere/
+```
 
-4. Run `terraform init`.
+Fill out a terraform.tfvars file with the ignition configs generated.
+There is an example terraform.tfvars file in this directory named terraform.tfvars.example.
+Read carefully this file to see how to complete the tfvars 
+```
+cp terraform.tfvars.example terraform.tfvars
+vi terraform.tfvars
+```
 
-5. Ensure that you have you AWS profile set and a region specified. 
-The installation will use create AWS route53 resources for routing to the OpenShift cluster.
+Run `terraform init` to initialize terraform, it will download the required plugins and verify the scripts syntax
 
-6. Run `terraform apply -auto-approve`.
-This will reserve IP addresses for the VMs.
+Run `terraform plan` to see the changes that terraform is going to apply to the vCenter
 
-7. Run `openshift-install wait-for bootstrap-complete`. 
+Run `terraform apply -auto-approve`.
+Terraform will create a folder in the vCenter with the name of the cluster and place the VMs inside that folder.
+It will also create a resource group with the same name.
+
+Run `./config-gen.py terraform.tfvars`.
+This script will generate a dhcpd.conf configuration and copy it to the /etc/dhcpd directory, just follow the script instructions.
+The script will test the DNS entries to see if they are correctly configured
+
+Run `openshift-install --dir=ocp4 wait-for bootstrap-complete`. 
 Wait for the bootstrapping to complete.
 
-8. Run `terraform apply -auto-approve -var 'bootstrap_complete=true'`.
+Run `terraform apply -auto-approve -var 'bootstrap_complete=true'`.
 This will destroy the bootstrap VM.
 
-9. Run `openshift-install wait-for install-complete`. 
+Run `openshift-install wait-for install-complete`. 
 Wait for the cluster install to finish.
 
-10. Enjoy your new OpenShift cluster.
+Enjoy your new OpenShift cluster.
 
-11. Run `terraform destroy -auto-approve`.
-
+If you need to erase the cluster, run `terraform destroy -auto-approve`.
+The *terraform destroy* command uses the terraform metadata generated when you run the *terraform init* and *terraform apply* commands, so terraform knows what has been created and safely deletes that (like an undo).
+So it is advisable to avoid deleting the terraform.tfstate file and the hidden directory created.
