@@ -1,7 +1,7 @@
 # Reference Documentation:
-https://blog.openshift.com/deploying-a-user-provisioned-infrastructure-environment-for-openshift-4-1-on-vsphere/
-https://blog.openshift.com/openshift-4-2-vsphere-install-quickstart/
-https://docs.openshift.com/container-platform/4.3/installing/installing_vsphere/installing-vsphere.html
+ * https://blog.openshift.com/deploying-a-user-provisioned-infrastructure-environment-for-openshift-4-1-on-vsphere/
+ * https://blog.openshift.com/openshift-4-2-vsphere-install-quickstart/
+ * https://docs.openshift.com/container-platform/4.3/installing/installing_vsphere/installing-vsphere.html
 
 # Pre-Requisites
 
@@ -32,8 +32,8 @@ chmod +x /usr/local/bin/govc
 Configure the CLI with the vSphere settings
 ```
 export GOVC_URL='vcenter.example.com'
-export GOVC_USERNAME='admin'
-export GOVC_PASSWORD='passw0rd'
+export GOVC_USERNAME='VSPHERE_ADMIN_USER'
+export GOVC_PASSWORD='VSPHERE_ADMIN_PASSWORD'
 export GOVC_NETWORK='VM Network'
 export GOVC_DATASTORE='Datastore'
 export GOVC_INSECURE=1 # If the host above uses a self-signed cert
@@ -58,40 +58,84 @@ govc import.ova -name=rhcos-4.3.0 -pool=/Datacenter/host/Cluster/Resources  ./rh
 govc vm.markastemplate vm/rhcos-4.3.0
 ```
 
-# Build a Cluster
+# Build the Cluster
 Download the OpenShift client
 ```
-curl -O https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.3.0.tar.gz
-curl -O https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux-4.3.0.tar.gz
-tar xzvf openshift-install-linux-4.3.0.tar.gz
-tar xzvf openshift-client-linux-4.3.0.tar.gz
+curl -O https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.3.1.tar.gz
+curl -O https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux-4.3.1.tar.gz
+tar xzvf openshift-install-linux-4.3.1.tar.gz
+tar xzvf openshift-client-linux-4.3.1.tar.gz
+cp openshift-install /usr/local/bin
+cp oc /usr/local/bin
 ```
 
-
-# Build a Cluster
-
-1. Create an install-config.yaml.
-The machine CIDR for the dev cluster is 139.178.89.192/26.
-
+Create a folder for the cluster configuration files
 ```
+mkdir ocp4
+```
+
+Create an install-config.yaml
+```
+cat << EOF > ocp4/install-config.yaml
+---
 apiVersion: v1
-baseDomain: devcluster.openshift.com
+baseDomain: example.com
+proxy:
+  httpProxy: http://192.168.0.101:8080
+  httpsProxy: http://192.168.0.101:8080
+compute:
+- hyperthreading: Enabled
+  name: worker
+  replicas: 0 
+controlPlane:
+  hyperthreading: Enabled
+  name: master
+  replicas: 3
 metadata:
-  name: mstaeble
-networking:
-  machineCIDR: "139.178.89.192/26"
+  name: closprod
 platform:
   vsphere:
-    vCenter: vcsa.vmware.devcluster.openshift.com
-    username: YOUR_VSPHERE_USER
-    password: YOUR_VSPHERE_PASSWORD
-    datacenter: dc1
-    defaultDatastore: nvme-ds1
-pullSecret: YOUR_PULL_SECRET
-sshKey: YOUR_SSH_KEY
+    vcenter: vcentercc.example.com
+    username: VSPHERE_DYNAMIC_PROVISIONING_USER
+    password: VSPHERE_DYNAMIC_PROVISIONING_PASSWORD
+    datacenter: Cluster
+    defaultDatastore: Datastore
+networking:
+  clusterNetworks:
+  - cidr: "10.128.0.0/14"
+    hostPrefix: 23
+  machineCIDR: "192.168.0.0/24"
+  serviceCIDR: "172.30.0.0/16"
+fips: false 
+pullSecret: '{"auths": ...}'
+sshKey: 'ssh-rsa AAAA...' 
+EOF
 ```
 
-2. Run `openshift-install create ignition-configs`.
+Crear the manifests manifest
+```
+openshift-install create manifests --dir=ocp4
+```
+
+Set the flag mastersSchedulable to false
+```
+sed -i 's/mastersSchedulable: true/mastersSchedulable: false/g' ocp4/manifests/cluster-scheduler-02-config.yml
+```
+
+Create the ignition config files
+```
+openshift-install create ignition-configs --dir=ocp4
+```
+
+Copy the ignition config file from bootstrap to the httpd root
+```
+cp ocp4/bootstrap.ign /var/www/html/
+```
+
+Clone the OpenShift installer repo
+```
+git clone https://github.com/gojeaqui/installer.git
+```
 
 3. Fill out a terraform.tfvars file with the ignition configs generated.
 There is an example terraform.tfvars file in this directory named terraform.tfvars.example. 
