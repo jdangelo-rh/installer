@@ -1,12 +1,12 @@
 # Reference Documentation:
- * https://blog.openshift.com/deploying-a-user-provisioned-infrastructure-environment-for-openshift-4-1-on-vsphere/
- * https://blog.openshift.com/openshift-4-2-vsphere-install-quickstart/
- * https://docs.openshift.com/container-platform/4.3/installing/installing_vsphere/installing-vsphere.html
+ * [Deploying a User Provisioned Infrastructure environment for OpenShift 4.1 on vSphere](https://blog.openshift.com/deploying-a-user-provisioned-infrastructure-environment-for-openshift-4-1-on-vsphere/)
+ * [OpenShift 4.2 vSphere Install Quickstart](https://blog.openshift.com/openshift-4-2-vsphere-install-quickstart/)
+ * [Installing a cluster on vSphere](https://docs.openshift.com/container-platform/4.3/installing/installing_vsphere/installing-vsphere.html)
 
 # Pre-Requisites
 
-* terraform version 0.11.12 (https://releases.hashicorp.com/terraform/0.11.12)
-* VMWare command line tool govc (https://github.com/vmware/govmomi)
+* [terraform version 0.11.12](https://releases.hashicorp.com/terraform/0.11.12)
+* [VMWare command line tool govc](https://github.com/vmware/govmomi)
 
 # Setup Prerequisites
 Download the terraform executable and install it
