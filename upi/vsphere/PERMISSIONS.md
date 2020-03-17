@@ -21,8 +21,8 @@ In order to use Terraform provider as non priviledged user, a Role within vCente
     -   Apply recommendation
     -   Assign virtual machine to resource pool
 -   Virtual Machine
-    -   Configuration (all) - for now
-    -   Guest Operations (all) - for now
+    -   Configuration (all)
+    -   Guest Operations (all)
     -   Interaction (all)
     -   Inventory (all)
     -   Provisioning (all)
