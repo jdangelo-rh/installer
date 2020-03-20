@@ -23,6 +23,11 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+# Verficar que me hayan pasado los parametros correctos
+if len(sys.argv) != 2:
+    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Cantidad de parametros incorrecta")
+    print("USO: config-gen.py terraform.tfvars")
+    sys.exit(1)
 
 ### Validar prerequisitos: terraform, govc, dig, dhcpd
 print ("\n## Validando prerequisitos: terraform, govc, dig, dhcpd")
@@ -30,7 +35,6 @@ for cmd in ["terraform", "govc", "dig", "dhcpd"]:
     if os.system("which " + cmd) != 0:
         print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " el comando: " + cmd + " no se encuentra instalado")
         #sys.exit(1)
-
 
 ### Proceso el archivo leyendo las variables del mismo, por suerte el formato de variables de terraform es igual al de python
 filename = sys.argv[1]
