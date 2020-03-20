@@ -104,39 +104,52 @@ for i in range(len(compute_names)):
     hostname_ip[compute_names[i]] = compute_ips[i]
 
 # Verificacion de registros DNS directo y reverso
-for node in bootstrap_name+control_plane_names+compute_names:
-    dig_proc = subprocess.Popen("dig %s.%s +short" % (node, cluster_domain), stdout=subprocess.PIPE, shell=True)
+def dns_verify(dns_ip):
+    for node in bootstrap_name+control_plane_names+compute_names:
+        dig_cmd = "dig %s.%s +short" % (node, cluster_domain) + " @" + dns_ip
+        
+        dig_proc = subprocess.Popen(dig_cmd, stdout=subprocess.PIPE, shell=True)
 
-    found = False
+        found = False
 
-    print ("dig %s.%s +short" % (node, cluster_domain) + " <=> " + hostname_ip[node])
+        print (dig_cmd + " <=> " + hostname_ip[node])
 
-    for line in iter(dig_proc.stdout.readline, ""):
-        if line.strip() == hostname_ip[node]:
-          found = True
+        for line in iter(dig_proc.stdout.readline, ""):
+            if line.strip() == hostname_ip[node]:
+              found = True
 
-    if found == False:
-        print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " fallo la verificacion de DNS del host: " + node)
-        #os.system("dig %s.%s +short" % (node, cluster_domain))
-        sys.exit(1)
+        if found == False:
+            print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " fallo la verificacion de DNS del host: " + node)
+            print ("DNS Server: " + dns_ip)
+            #os.system("dig %s.%s +short" % (node, cluster_domain))
+            sys.exit(1)
 
-    digx_proc = subprocess.Popen("dig -x %s +short" % (hostname_ip[node]), stdout=subprocess.PIPE, shell=True)
+        digx_cmd = "dig -x %s +short" % (hostname_ip[node]) + " @" + dns_ip
 
-    found = False
+        digx_proc = subprocess.Popen(digx_cmd, stdout=subprocess.PIPE, shell=True)
 
-    node_fqdn = node + "." + cluster_domain + "."
-    print ("dig -x %s +short" % (hostname_ip[node]) + " <=> " + node_fqdn)
+        found = False
 
-    for line in iter(digx_proc.stdout.readline, ""):
-        if line.strip() == node_fqdn:
-          found = True
+        node_fqdn = node + "." + cluster_domain + "."
+        print (digx_cmd + " <=> " + node_fqdn)
 
-    if found == False:
-        print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " fallo la verificacion de DNS *reverso* del host: " + node)
-        #os.system("dig -x %s +short" % (hostname_ip[node]))
-        sys.exit(1)
+        for line in iter(digx_proc.stdout.readline, ""):
+            if line.strip() == node_fqdn:
+              found = True
 
-print ("\nRegistros DNS A y reverso" + bcolors.OKGREEN + " * OK *" + bcolors.ENDC)
+        if found == False:
+            print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " fallo la verificacion de DNS *reverso* del host: " + node)
+            print ("DNS Server: " + dns_ip)
+            #os.system("dig -x %s +short" % (hostname_ip[node]))
+            sys.exit(1)
+
+    print ("\nRegistros DNS A y reverso" + bcolors.OKGREEN + " * OK *" + bcolors.ENDC)
+
+for dns_ip in dns_ips:
+    #print(dns_ip)
+    dns_verify(dns_ip)
+
+#sys.exit(1)
 
 # Verificacion de registros etcd
 print("\n## Verificacion de registros etcd")
