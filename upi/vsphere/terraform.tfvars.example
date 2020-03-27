@@ -7,7 +7,7 @@ cluster_domain = "cluster.example.com"
 // Base domain from which the cluster domain is a subdomain.
 base_domain = "example.com"
 
-// Name of the vSphere server. The dev cluster is on "vcsa.vmware.devcluster.openshift.com".
+// Name of the vSphere server.
 vsphere_server = "vcenter.example.com"
 
 // User on the vSphere server.
@@ -16,20 +16,29 @@ vsphere_user = "admin"
 // Password of the user on the vSphere server.
 vsphere_password = "passw0rd"
 
-// Name of the vSphere cluster. The dev cluster is "devel".
+// Name of the vSphere cluster.
 vsphere_cluster = "Cluster"
 
-// Name of the vSphere data center. The dev cluster is "dc1".
+// Name of the vSphere data center.
 vsphere_datacenter = "Datacenter"
 
-// Name of the vSphere data store to use for the VMs. The dev cluster uses "nvme-ds1".
+// Name of the vSphere data store to use for the VMs.
 vsphere_datastore = "Datastore"
 
-// Name of the VM template to clone to create VMs for the cluster. The dev cluster has a template named "rhcos-latest".
+// Name of the VM template to clone to create VMs for the cluster.
 vm_template = "rhcos-4.3.0"
 
 // Name of the VM network to attach to
 vm_network = "VM Network"
+
+// Name of the folder where the OCP cluster VMs will be created
+// The path is relative to the vCenter root
+folder = "Production/openshift/ocp-cluster"
+
+// ID of the Resource Pool where the OCP cluster VMs will be created
+// You can get the ID with govc: govc find / -type p 
+// govc ls -l -i /Datacenter/host/Cluster/Resources/openshift 
+resource_pool_id = "resgroup-54"
 
 // The machine_cidr where IP addresses will be assigned for cluster nodes.
 // Additionally, IPAM will assign IPs based on the network ID.
