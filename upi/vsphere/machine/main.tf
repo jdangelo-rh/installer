@@ -36,9 +36,11 @@ resource "vsphere_virtual_machine" "vm" {
 
   disk {
     label            = "disk0"
+//    size             = "${data.vsphere_virtual_machine.template.disks.0.size}"
     size             = 120
-//    thin_provisioned = "${data.vsphere_virtual_machine.template.disks.0.thin_provisioned}"
-    thin_provisioned = "true"
+    thin_provisioned = "${data.vsphere_virtual_machine.template.disks.0.thin_provisioned}"
+// It is not possible to use this option, it has to be changed in the OVA when importing
+//    thin_provisioned = "true"
   }
 
   clone {
