@@ -47,9 +47,9 @@ variable "folder" {
   description = "Name of the folder where the OCP cluster VMs will be created"
 }
 
-variable "resource_group_id" {
+variable "resource_pool_id" {
   type        = "string"
-  description = "ID of the Resource Group where the OCP cluster VMs will be created"
+  description = "ID of the Resource Pool where the OCP cluster VMs will be created"
 }
 
 variable "ipam" {
