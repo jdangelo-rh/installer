@@ -42,6 +42,16 @@ variable "vm_network" {
   description = "This is the name of the publicly accessible network for cluster ingress and access."
 }
 
+variable "parent_folder" {
+  type        = "string"
+  description = "Name of the VM parent folder where the OCP cluster folder will be created"
+}
+
+variable "parent_resource_group" {
+  type        = "string"
+  description = "Name of the parent Resource Group where the Resource group will be created"
+}
+
 variable "ipam" {
   type        = "string"
   description = "The IPAM server to use for IP management."
