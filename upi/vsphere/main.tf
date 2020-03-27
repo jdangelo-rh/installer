@@ -9,23 +9,6 @@ data "vsphere_datacenter" "dc" {
   name = "${var.vsphere_datacenter}"
 }
 
-module "folder" {
-  source = "./folder"
-
-  path          = "${var.cluster_id}"
-  parent        = "${var.parent_folder}"
-  datacenter_id = "${data.vsphere_datacenter.dc.id}"
-}
-
-module "resource_pool" {
-  source = "./resource_pool"
-
-  name            = "${var.cluster_id}"
-  parent          = "${var.parent_resource_group}"
-  datacenter_id   = "${data.vsphere_datacenter.dc.id}"
-  vsphere_cluster = "${var.vsphere_cluster}"
-}
-
 module "bootstrap" {
   source = "./machine"
 
