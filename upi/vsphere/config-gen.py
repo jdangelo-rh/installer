@@ -59,13 +59,13 @@ for line in terraform_file:
 ### Genero los comandos para apagar las VMs
 print("\n## Apagado de las VMs")
 for node in bootstrap_name+control_plane_names+compute_names:
-    print("govc vm.power -off /%s/vm/%s/%s" % (vsphere_datacenter, cluster_id, node))
+    print("govc vm.power -off /%s/vm/%s/%s" % (vsphere_datacenter, folder, node))
 
 
 ### Genero los comandos para encender las VMs
 print("\n## Levantar las VMs")
 for node in bootstrap_name+control_plane_names+compute_names:
-    print("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, cluster_id, node))
+    print("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, folder, node))
 
 
 ### Genero los comandos para setar las MAC Address
@@ -73,7 +73,7 @@ print("\n## Setear MAC addressess")
 
 node_mac = {}
 for node in bootstrap_name+control_plane_names+compute_names:
-    govc_proc = subprocess.Popen("govc device.info -vm='/%s/vm/%s/%s' ethernet-0" % (vsphere_datacenter, cluster_id, node), stdout=subprocess.PIPE, shell=True)
+    govc_proc = subprocess.Popen("govc device.info -vm='/%s/vm/%s/%s' ethernet-0" % (vsphere_datacenter, folder, node), stdout=subprocess.PIPE, shell=True)
 
     node_mac[node] = "00:00:00:00:00:00"
 
@@ -84,7 +84,7 @@ for node in bootstrap_name+control_plane_names+compute_names:
         if (mac_re):
             mac_address = line.split(": ")[1].strip()
             node_mac[node] = mac_address
-            print ("govc vm.network.change -vm /%s/vm/%s/%s -net '%s' -net.address %s ethernet-0" % (vsphere_datacenter, cluster_id, node, vm_network, mac_address))
+            print ("govc vm.network.change -vm /%s/vm/%s/%s -net '%s' -net.address %s ethernet-0" % (vsphere_datacenter, folder, node, vm_network, mac_address))
 
 
 
