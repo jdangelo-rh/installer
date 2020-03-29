@@ -42,12 +42,12 @@ variable "vm_network" {
   description = "This is the name of the publicly accessible network for cluster ingress and access."
 }
 
-variable "folder" {
+variable "vm_folder" {
   type        = "string"
   description = "Name of the folder where the OCP cluster VMs will be created"
 }
 
-variable "resource_pool_id" {
+variable "vm_resource_pool_id" {
   type        = "string"
   description = "ID of the Resource Pool where the OCP cluster VMs will be created"
 }

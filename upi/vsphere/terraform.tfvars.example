@@ -33,12 +33,12 @@ vm_network = "VM Network"
 
 // Name of the folder where the OCP cluster VMs will be created
 // The path is relative to the vCenter root
-folder = "Production/openshift/ocp-cluster"
+vm_folder = "Production/openshift/ocp-cluster"
 
 // ID of the Resource Pool where the OCP cluster VMs will be created
 // You can get the ID with govc: govc find / -type p 
 // govc ls -l -i /Datacenter/host/Cluster/Resources/openshift 
-resource_pool_id = "resgroup-54"
+vm_resource_pool_id = "resgroup-54"
 
 // The machine_cidr where IP addresses will be assigned for cluster nodes.
 // Additionally, IPAM will assign IPs based on the network ID.
