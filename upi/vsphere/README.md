@@ -81,7 +81,7 @@ vi rhcos.json
 
 Import the template and mark it as such
 ```
-govc import.ova -name=rhcos-4.3.8 -pool=/Datacenter/host/Cluster/Resources -ds=datastore1 -folder=templates -options=rhcos.json ./rhcos-4.3.8-x86_64-vmware.x86_64.ova
+govc import.ova -name=rhcos-4.3.8 -pool=/Datacenter/host/Cluster/Resources -ds=Datastore -folder=templates -options=rhcos.json ./rhcos-4.3.8-x86_64-vmware.x86_64.ova
 govc vm.markastemplate /Datacenter/vm/templates/rhcos-4.3.8
 ```
 
