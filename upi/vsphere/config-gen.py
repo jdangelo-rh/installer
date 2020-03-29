@@ -128,23 +128,23 @@ govc role.create ocp-terraform-vm \\
 ### Genero los comandos para establecer los permisos
 print("\n## Set permissions on vCenter objects")
 print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=true \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_folder))
-print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=false \"/%s/vm/templates/%s\"" % (vsphere_user, vsphere_datacenter, vm_template))
+#print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=false \"/%s/vm/%s/%s\"" % (vsphere_user, vsphere_datacenter, vm_template_folder, vm_template))
 print("govc permissions.set -principal %s -role ocp-terraform-network -propagate=false \"/%s/network/%s\"" % (vsphere_user, vsphere_datacenter, vm_network))
 print("govc permissions.set -principal %s -role ocp-terraform-datastore -propagate=false \"/%s/datastore/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_datastore))
-print("govc permissions.set -principal %s -role ocp-terraform-resource -propagate=false \"/%s/host/%s/Resources/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_cluster, vm_resource_pool))
+#print("govc permissions.set -principal %s -role ocp-terraform-resource -propagate=false \"/%s/host/%s/Resources/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_cluster, vm_resource_pool))
 print("govc permissions.set -principal %s -role ocp-terraform-vcenter -propagate=false \"/\"" % (vsphere_user))
 
 
 ### Genero los comandos para apagar las VMs
 print("\n## Apagado de las VMs")
 for node in bootstrap_name+control_plane_names+compute_names:
-    print("govc vm.power -off /%s/vm/%s/%s" % (vsphere_datacenter, folder, node))
+    print("govc vm.power -off /%s/vm/%s/%s" % (vsphere_datacenter, vm_folder, node))
 
 
 ### Genero los comandos para encender las VMs
 print("\n## Levantar las VMs")
 for node in bootstrap_name+control_plane_names+compute_names:
-    print("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, folder, node))
+    print("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, vm_folder, node))
 
 
 ### Genero los comandos para setar las MAC Address
@@ -152,7 +152,7 @@ print("\n## Setear MAC addressess")
 
 node_mac = {}
 for node in bootstrap_name+control_plane_names+compute_names:
-    govc_proc = subprocess.Popen("govc device.info -vm='/%s/vm/%s/%s' ethernet-0" % (vsphere_datacenter, folder, node), stdout=subprocess.PIPE, shell=True)
+    govc_proc = subprocess.Popen("govc device.info -vm='/%s/vm/%s/%s' ethernet-0" % (vsphere_datacenter, vm_folder, node), stdout=subprocess.PIPE, shell=True)
 
     node_mac[node] = "00:00:00:00:00:00"
 
@@ -163,7 +163,7 @@ for node in bootstrap_name+control_plane_names+compute_names:
         if (mac_re):
             mac_address = line.split(": ")[1].strip()
             node_mac[node] = mac_address
-            print ("govc vm.network.change -vm /%s/vm/%s/%s -net '%s' -net.address %s ethernet-0" % (vsphere_datacenter, folder, node, vm_network, mac_address))
+            print ("govc vm.network.change -vm /%s/vm/%s/%s -net '%s' -net.address %s ethernet-0" % (vsphere_datacenter, vm_folder, node, vm_network, mac_address))
 
 
 
