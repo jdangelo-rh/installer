@@ -139,7 +139,7 @@ sshKey: 'ssh-rsa AAAA...'
 EOF
 ```
 
-Crear the manifests manifest
+Generate the Kubernetes manifests for the cluster
 ```
 openshift-install create manifests --dir=ocp4
 ```
