@@ -56,6 +56,85 @@ for line in terraform_file:
     exec(line)
 
 
+### Genero los comandos para crear los roles
+print('''
+## Role creation
+govc role.create ocp-terraform-network \\
+	Network.Assign
+govc role.create ocp-terraform-datastore \\
+	Datastore.AllocateSpace \\
+	Datastore.FileManagement 
+govc role.create ocp-terraform-vcenter \\
+	StorageProfile.View
+govc role.create ocp-terraform-resource \\
+	Resource.AssignVAppToPool \\
+	Resource.AssignVMToPool \\
+	Resource.CreatePool \\
+	Resource.DeletePool
+govc role.create ocp-terraform-vm \\
+	VApp.ApplicationConfig \\
+	VApp.Clone \\
+	VApp.ExtractOvfEnvironment \\
+	VApp.InstanceConfig VApp.ResourceConfig \\
+	Folder.Create Folder.Delete \\
+	VirtualMachine.Config.AddNewDisk \\
+	VirtualMachine.Config.AdvancedConfig \\
+	VirtualMachine.Config.CPUCount \\
+	VirtualMachine.Config.DiskExtend \\
+	VirtualMachine.Config.EditDevice \\
+	VirtualMachine.Config.Memory \\
+	VirtualMachine.Config.Rename \\
+	VirtualMachine.Config.Resource \\
+	VirtualMachine.Config.Settings \\
+	VirtualMachine.GuestOperations.Execute \\
+	VirtualMachine.GuestOperations.Modify \\
+	VirtualMachine.GuestOperations.ModifyAliases \\
+	VirtualMachine.GuestOperations.Query \\
+	VirtualMachine.GuestOperations.QueryAliases \\
+	VirtualMachine.Interact.ConsoleInteract \\
+	VirtualMachine.Interact.GuestControl \\
+	VirtualMachine.Interact.Pause \\
+	VirtualMachine.Interact.PowerOff \\
+	VirtualMachine.Interact.PowerOn \\
+	VirtualMachine.Interact.Reset \\
+	VirtualMachine.Interact.SetCDMedia \\
+	VirtualMachine.Interact.Suspend \\
+	VirtualMachine.Interact.ToolsInstall \\
+	VirtualMachine.Inventory.Create \\
+	VirtualMachine.Inventory.CreateFromExisting \\
+	VirtualMachine.Inventory.Delete \\
+	VirtualMachine.Inventory.Move \\
+	VirtualMachine.Inventory.Register \\
+	VirtualMachine.Inventory.Unregister \\
+	VirtualMachine.Provisioning.Clone \\
+	VirtualMachine.Provisioning.CloneTemplate \\
+	VirtualMachine.Provisioning.CreateTemplateFromVM \\
+	VirtualMachine.Provisioning.Customize \\
+	VirtualMachine.Provisioning.DeployTemplate \\
+	VirtualMachine.Provisioning.DiskRandomAccess \\
+	VirtualMachine.Provisioning.DiskRandomRead \\
+	VirtualMachine.Provisioning.FileRandomAccess \\
+	VirtualMachine.Provisioning.GetVmFiles \\
+	VirtualMachine.Provisioning.MarkAsTemplate \\
+	VirtualMachine.Provisioning.MarkAsVM \\
+	VirtualMachine.Provisioning.ModifyCustSpecs \\
+	VirtualMachine.Provisioning.PromoteDisks \\
+	VirtualMachine.Provisioning.PutVmFiles \\
+	VirtualMachine.Provisioning.ReadCustSpecs
+''')
+
+#vm_resource_pool = ?
+#vm_template_folder = ?
+### Genero los comandos para establecer los permisos
+print("\n## Set permissions on vCenter objects")
+print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=true \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_folder))
+print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=false \"/%s/vm/templates/%s\"" % (vsphere_user, vsphere_datacenter, vm_template))
+print("govc permissions.set -principal %s -role ocp-terraform-network -propagate=false \"/%s/network/%s\"" % (vsphere_user, vsphere_datacenter, vm_network))
+print("govc permissions.set -principal %s -role ocp-terraform-datastore -propagate=false \"/%s/datastore/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_datastore))
+print("govc permissions.set -principal %s -role ocp-terraform-resource -propagate=false \"/%s/host/%s/Resources/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_cluster, vm_resource_pool))
+print("govc permissions.set -principal %s -role ocp-terraform-vcenter -propagate=false \"/\"" % (vsphere_user))
+
+
 ### Genero los comandos para apagar las VMs
 print("\n## Apagado de las VMs")
 for node in bootstrap_name+control_plane_names+compute_names:
@@ -268,4 +347,5 @@ print ("systemctl start dhcpd")
 
 # Mostrar el status
 print ("systemctl status dhcpd")
+
 
