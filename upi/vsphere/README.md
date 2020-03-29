@@ -12,7 +12,7 @@
 # Setup Prerequisites
 Install the required packages
 ```
-yum install -y httpd dhcp unzip git
+yum install -y bind-utils httpd dhcp unzip git
 ```
 
 Download the terraform executable and install it
