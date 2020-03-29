@@ -2,21 +2,27 @@
  * [Deploying a User Provisioned Infrastructure environment for OpenShift 4.1 on vSphere](https://blog.openshift.com/deploying-a-user-provisioned-infrastructure-environment-for-openshift-4-1-on-vsphere/)
  * [OpenShift 4.2 vSphere Install Quickstart](https://blog.openshift.com/openshift-4-2-vsphere-install-quickstart/)
  * [Installing a cluster on vSphere](https://docs.openshift.com/container-platform/4.3/installing/installing_vsphere/installing-vsphere.html)
+ * [OpenShift 4.3 installation on VMware vSphere with static IPs](https://labs.consol.de/container/platform/openshift/2020/01/31/ocp43-installation-vmware.html)
 
 # Pre-Requisites
 
-* [terraform version 0.11.12](https://releases.hashicorp.com/terraform/0.11.12)
+* [terraform version 0.11.14](https://releases.hashicorp.com/terraform/0.11.14)
 * [VMWare command line tool govc](https://github.com/vmware/govmomi)
 
 # Setup Prerequisites
+Install the required packages
+```
+yum install -y httpd dhcp unzip git
+```
+
 Download the terraform executable and install it
 ```
-curl -O https://releases.hashicorp.com/terraform/0.11.12/terraform_0.11.12_linux_amd64.zip
-unzip terraform_0.11.12_linux_amd64.zip
+curl -O https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zip
+unzip terraform_0.11.14_linux_amd64.zip
 cp terraform /usr/local/bin
 ```
 
-Validate version (should be: v0.11.12)
+Validate version (should be: v0.11.14)
 ```
 terraform version
 ```
@@ -45,17 +51,38 @@ govc ls
 govc about
 ```
 
-List resource pools
+If you don't have a Folder already then you might want to create one
 ```
-$ govc find / -type p
-/Datacenter/host/Cluster/Resources
+govc folder.create /Datacenter/vm/Production/ocp-folder
+```
+
+If you don't have a Resource Pool already then you might want to create one
+```
+govc pool.create /Datacenter/host/Cluster/Resources/openshift
+```
+
+List resource pools and get their ID (needed for terraform)
+```
+for ResourcePool in $(govc find / -type p); do govc ls -l -i $ResourcePool; done
+ResourcePool:resgroup-8 /Datacenter/host/Cluster/Resources
+ResourcePool:resgroup-54 /Datacenter/host/Cluster/Resources/openshift
 ```
 
 Download the OVA and import it into the Template Repository
 ```
-curl -O https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.3/latest/rhcos-4.3.0-x86_64-vmware.ova
-govc import.ova -name=rhcos-4.3.0 -pool=/Datacenter/host/Cluster/Resources  ./rhcos-4.3.0-x86_64-vmware.ova
-govc vm.markastemplate vm/rhcos-4.3.0
+curl -O https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.3/4.3.8/rhcos-4.3.8-x86_64-vmware.x86_64.ova
+```
+
+Verify that the Template options are the ones you want
+```
+govc import.spec rhcos-4.3.8-x86_64-vmware.x86_64.ova | python -m json.tool > rhcos.json
+vi rhcos.json
+```
+
+Import the template and mark it as such
+```
+govc import.ova -name=rhcos-4.3.8 -pool=/Datacenter/host/Cluster/Resources -ds=datastore1 -folder=templates -options=rhcos.json ./rhcos-4.3.8-x86_64-vmware.x86_64.ova
+govc vm.markastemplate /Datacenter/vm/templates/rhcos-4.3.8
 ```
 
 # Build the Cluster
