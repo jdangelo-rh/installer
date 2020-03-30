@@ -39,7 +39,6 @@ for cmd in ["terraform", "govc", "dig", "dhcpd"]:
 
 ### Validar los parametros de govc
 print ("\n## Validando los parametros de govc")
-print(os.getenv('GOVC_URL'))
 if  os.getenv('GOVC_URL') == None or \
     os.getenv('GOVC_USERNAME') == None or \
     os.getenv('GOVC_PASSWORD') == None or \
@@ -47,7 +46,7 @@ if  os.getenv('GOVC_URL') == None or \
     os.getenv('GOVC_DATASTORE') == None or \
     os.getenv('GOVC_INSECURE') == None:
     print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " el entorno de govc no se encuentra configurado.")
-    print("Por favor especifique el valor de las siguientes variables:")
+    print("Por favor configure el entorno especificando el valor de las siguientes variables:")
     print('''
 export GOVC_URL='vcenter.example.com'
 export GOVC_USERNAME='VSPHERE_ADMIN_USER'
@@ -146,17 +145,50 @@ govc role.create ocp-terraform-vm \\
 	VirtualMachine.Provisioning.ReadCustSpecs
 ''')
 
-#vm_resource_pool = ?
-#vm_template_folder = ?
+## Busco la carpeta donde esta alojado el template
+govc_find_proc = subprocess.Popen("govc find -type m -name=%s" % (vm_template), shell=True, stdout=subprocess.PIPE)
+
+vm_template_path = ""
+
+for line in iter(govc_find_proc.stdout.readline, ""):
+    vm_template_path = line.rstrip()
+    break
+
+if vm_template_path == "":
+    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " no se encontro la ruta del template especificado: " + vm_template)
+else:
+    print("Se encontro el template en la ruta: " + vm_template_path)
+
+govc_find_proc.stdout.close()
+
+## Busco el nombre del Resource Pool
+govc_find_proc = subprocess.Popen("for ResourcePool in $(govc find / -type p); do govc ls -l -i $ResourcePool; done", shell=True, stdout=subprocess.PIPE)
+
+vm_resource_pool = ""
+
+for line in iter(govc_find_proc.stdout.readline, ""):
+    if line.find(vm_resource_pool_id) != -1:
+        #vm_resource_pool = line.rstrip()
+        #print(line.rstrip())
+        vm_resource_pool = line.rstrip().split(" ")[1]
+
+if vm_resource_pool == "":
+    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " no se encontro el resource pool asociado al ID especificado: " + vm_resource_pool_id)
+else:
+    print("Se encontro el resource group en la ruta: " + vm_resource_pool)
+
+govc_find_proc.stdout.close()
+
 ### Genero los comandos para establecer los permisos
 print("\n## Set permissions on vCenter objects")
 print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=true \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_folder))
-#print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=false \"/%s/vm/%s/%s\"" % (vsphere_user, vsphere_datacenter, vm_template_folder, vm_template))
+print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=false \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_template_path))
 print("govc permissions.set -principal %s -role ocp-terraform-network -propagate=false \"/%s/network/%s\"" % (vsphere_user, vsphere_datacenter, vm_network))
 print("govc permissions.set -principal %s -role ocp-terraform-datastore -propagate=false \"/%s/datastore/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_datastore))
-#print("govc permissions.set -principal %s -role ocp-terraform-resource -propagate=false \"/%s/host/%s/Resources/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_cluster, vm_resource_pool))
+print("govc permissions.set -principal %s -role ocp-terraform-resource -propagate=false \"/%s\"" % (vsphere_user, vm_resource_pool))
 print("govc permissions.set -principal %s -role ocp-terraform-vcenter -propagate=false \"/\"" % (vsphere_user))
 
+sys.exit(1)
 
 ### Genero los comandos para apagar las VMs
 print("\n## Apagado de las VMs")
