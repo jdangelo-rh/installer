@@ -6,14 +6,14 @@ In order to use Terraform provider as non priviledged user, some Roles within vC
 - Datastore [Role: ocp-terraform-datastore]
   - Allocate space
   - Low level file operations
-- Folder [Role: ]
+- Folder [Role: ocp-terraform-vm]
   - Create folder
   - Delete folder
-- StorageProfile [Role: ]
+- StorageProfile [Role: ocp-terraform-vcenter]
   - View
 - Network [Role: ocp-terraform-network]
   - Assign network
-- Resource [Role: ]
+- Resource [Role: ocp-terraform-resource]
   - Assign vApp to resource pool
   - Assign virtual machine to resource pool
   - Create resource pool
@@ -32,13 +32,14 @@ In order to use Terraform provider as non priviledged user, some Roles within vC
   - Provisioning (all)
 
 And these roles have to be given permission on the following objects:
-- [Role: ocp-terraform-vm] "/Datacenter/vm/openshift/ocp" (The folder where VMs will be alocated, with propagate to children)
+- [Role: ocp-terraform-vm] "/Datacenter/vm/Production/ocp-folder" (The folder where VMs will be alocated, with propagate to children)
 - [Role: ocp-terraform-vm] "/Datacenter/vm/templates/rhcos-4.3.8" (The OVA template that will be cloned)
 - [ocp-terraform-network] "/Datacenter/network/VM Network" (The VM Network the VMs will attach  to)
-- [ocp-terraform-datastore] "/Datacenter/datastore/datastore2" (The Datastore where the VMs disk0 will reside)
+- [ocp-terraform-datastore] "/Datacenter/datastore/Datastore" (The Datastore where the VMs disk0 will reside)
 - [Role: ocp-terraform-resource] "/Datacenter/host/Cluster/Resources/openshift" (The Resource Group the VMs will attach to)
 - [Role: ocp-terraform-vcenter] "/" (vCenter root)
 
+The config-gen.py script generates the commands needed to create these roles and assign them to the corresponding vCenter objects.
 
 These settings were tested with:
 - [vSphere 6.7](https://pubs.vmware.com/vsphere-60/index.jsp?topic=%2Fcom.vmware.vsphere.security.doc%2FGUID-18071E9A-EED1-4968-8D51-E0B4F526FDA3.html)
