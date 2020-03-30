@@ -9,6 +9,8 @@ import subprocess
 import sys
 import stat
 import datetime
+import getpass
+
 
 ### NTP servers:
 # NOTA: Los NTP se configuran despues mediante el machine config, no se configuran mas por DHCP
@@ -23,39 +25,20 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+
 ### Verficar que me hayan pasado los parametros correctos
 if len(sys.argv) != 2:
     print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Cantidad de parametros incorrecta")
     print("USO: config-gen.py terraform.tfvars")
     sys.exit(1)
 
+
 ### Validar prerequisitos: terraform, govc, dig, dhcpd
 print ("\n## Validando prerequisitos: terraform, govc, dig, dhcpd")
 for cmd in ["terraform", "govc", "dig", "dhcpd"]:
     if os.system("which " + cmd) != 0:
-        print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " el comando: " + cmd + " no se encuentra instalado")
+        print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "El comando: " + cmd + " no se encuentra instalado")
         sys.exit(1)
-
-
-### Validar los parametros de govc
-print ("\n## Validando los parametros de govc")
-if  os.getenv('GOVC_URL') == None or \
-    os.getenv('GOVC_USERNAME') == None or \
-    os.getenv('GOVC_PASSWORD') == None or \
-    os.getenv('GOVC_NETWORK') == None or \
-    os.getenv('GOVC_DATASTORE') == None or \
-    os.getenv('GOVC_INSECURE') == None:
-    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " el entorno de govc no se encuentra configurado.")
-    print("Por favor configure el entorno especificando el valor de las siguientes variables:")
-    print('''
-export GOVC_URL='vcenter.example.com'
-export GOVC_USERNAME='VSPHERE_ADMIN_USER'
-export GOVC_PASSWORD='VSPHERE_ADMIN_PASSWORD'
-export GOVC_NETWORK='VM Network'
-export GOVC_DATASTORE='Datastore'
-export GOVC_INSECURE=1 # If the host above uses a self-signed cert
-    ''')
-    sys.exit(1)
 
 
 ### Proceso el archivo leyendo las variables del mismo, por suerte el formato de variables de terraform es igual al de python
@@ -77,6 +60,44 @@ for line in terraform_file:
 
     exec(line)
 
+
+
+# os.environ['GOVC_USERNAME'] = raw_input('GOVC_USERNAME: ')
+# os.environ['GOVC_PASSWORD'] = getpass.getpass('GOVC_PASSWORD: ')
+# 
+# 
+# sys.exit(1)
+
+
+### Validar los parametros de govc
+print ("\n## Validando los parametros de govc")
+if  os.getenv('GOVC_URL') == None or \
+    os.getenv('GOVC_USERNAME') == None or \
+    os.getenv('GOVC_PASSWORD') == None or \
+    os.getenv('GOVC_NETWORK') == None or \
+    os.getenv('GOVC_DATASTORE') == None or \
+    os.getenv('GOVC_INSECURE') == None:
+
+    os.environ['GOVC_URL'] = vsphere_server
+    os.environ['GOVC_USERNAME'] = vsphere_user
+    os.environ['GOVC_PASSWORD'] = vsphere_password
+    os.environ['GOVC_NETWORK'] = vm_network
+    os.environ['GOVC_DATASTORE'] = vsphere_datastore
+    os.environ['GOVC_INSECURE'] = "1"
+
+"""    
+    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "El entorno de govc no se encuentra configurado.")
+    print("Por favor configure el entorno especificando el valor de las siguientes variables:")
+    print('''
+export GOVC_URL='vcenter.example.com'
+export GOVC_USERNAME='VSPHERE_ADMIN_USER'
+export GOVC_PASSWORD='VSPHERE_ADMIN_PASSWORD'
+export GOVC_NETWORK='VM Network'
+export GOVC_DATASTORE='Datastore'
+export GOVC_INSECURE=1 # If the host above uses a self-signed cert
+    ''')
+    sys.exit(1)
+"""
 
 ### Genero los comandos para crear los roles
 print('''
@@ -155,7 +176,7 @@ for line in iter(govc_find_proc.stdout.readline, ""):
     break
 
 if vm_template_path == "":
-    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " no se encontro la ruta del template especificado: " + vm_template)
+    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "No se encontro la ruta del template especificado: " + vm_template)
 else:
     print("Se encontro el template en la ruta: " + vm_template_path)
 
@@ -173,7 +194,7 @@ for line in iter(govc_find_proc.stdout.readline, ""):
         vm_resource_pool = line.rstrip().split(" ")[1]
 
 if vm_resource_pool == "":
-    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " no se encontro el resource pool asociado al ID especificado: " + vm_resource_pool_id)
+    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "No se encontro el resource pool asociado al ID especificado: " + vm_resource_pool_id)
 else:
     print("Se encontro el resource group en la ruta: " + vm_resource_pool)
 
@@ -187,6 +208,24 @@ print("govc permissions.set -principal %s -role ocp-terraform-network -propagate
 print("govc permissions.set -principal %s -role ocp-terraform-datastore -propagate=false \"/%s/datastore/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_datastore))
 print("govc permissions.set -principal %s -role ocp-terraform-resource -propagate=false \"/%s\"" % (vsphere_user, vm_resource_pool))
 print("govc permissions.set -principal %s -role ocp-terraform-vcenter -propagate=false \"/\"" % (vsphere_user))
+
+print("\n## Remove permissions from vCenter objects")
+print("govc permissions.remove -principal %s \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_folder))
+print("govc permissions.remove -principal %s \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_template_path))
+print("govc permissions.remove -principal %s \"/%s/network/%s\"" % (vsphere_user, vsphere_datacenter, vm_network))
+print("govc permissions.remove -principal %s \"/%s/datastore/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_datastore))
+print("govc permissions.remove -principal %s \"/%s\"" % (vsphere_user, vm_resource_pool))
+print("govc permissions.remove -principal %s \"/\"" % (vsphere_user))
+
+print('''
+## Remove vCenter roles
+govc role.remove ocp-terraform-vm
+govc role.remove ocp-terraform-vm
+govc role.remove ocp-terraform-network
+govc role.remove ocp-terraform-datastore
+govc role.remove ocp-terraform-resource
+govc role.remove ocp-terraform-vcenter
+''')
 
 sys.exit(1)
 
@@ -253,7 +292,7 @@ def dns_verify(dns_ip):
               found = True
 
         if found == False:
-            print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " fallo la verificacion de DNS del host: " + node)
+            print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Fallo la verificacion de DNS del host: " + node)
             print ("DNS Server: " + dns_ip)
             #os.system("dig %s.%s +short" % (node, cluster_domain))
             sys.exit(1)
@@ -272,7 +311,7 @@ def dns_verify(dns_ip):
               found = True
 
         if found == False:
-            print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " fallo la verificacion de DNS *reverso* del host: " + node)
+            print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Fallo la verificacion de DNS *reverso* del host: " + node)
             print ("DNS Server: " + dns_ip)
             #os.system("dig -x %s +short" % (hostname_ip[node]))
             sys.exit(1)
@@ -297,7 +336,7 @@ for i in range(len(control_plane_names)):
           found = True
 
     if found == False:
-      print (bcolors.FAIL + " * ERROR * " +  bcolors.ENDC + "fallo la verificacion de DNS *reverso* del host: " + control_plane_names[i])
+      print (bcolors.FAIL + " * ERROR * " +  bcolors.ENDC + "Fallo la verificacion de DNS *reverso* del host: " + control_plane_names[i])
       sys.exit(1)
 
 print ("\nRegistros DNS etcd" + bcolors.OKGREEN + " * OK *" + bcolors.ENDC)
@@ -402,5 +441,4 @@ print ("systemctl start dhcpd")
 
 # Mostrar el status
 print ("systemctl status dhcpd")
-
 
