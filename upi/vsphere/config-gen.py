@@ -26,7 +26,7 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
-def permissions():
+def permissions_terraform():
     print("\n### Please provide the credentials for the Admin user")
     vsphere_admin_user = raw_input('vCenter Admin User: ')
     vsphere_admin_password = getpass.getpass('vCenter Admin Password: ')
@@ -38,18 +38,27 @@ def permissions():
     ### Genero los comandos para crear los roles
     print('''
 ## Role creation
+# Virtual Network Privileges
 govc role.create ocp-terraform-network \\
     Network.Assign
+
+# Low level file operations on the datastore
 govc role.create ocp-terraform-datastore \\
     Datastore.AllocateSpace \\
     Datastore.FileManagement 
+
+# StorageProfile.View (Profile-driven storage view) at the vCenter level
 govc role.create ocp-terraform-vcenter \\
     StorageProfile.View
+
+# Resource Group Privileges
 govc role.create ocp-terraform-resource \\
     Resource.AssignVAppToPool \\
     Resource.AssignVMToPool \\
     Resource.CreatePool \\
     Resource.DeletePool
+
+# Virtual Machine Privileges
 govc role.create ocp-terraform-vm \\
     VApp.ApplicationConfig \\
     VApp.Clone \\
@@ -145,6 +154,7 @@ govc role.create ocp-terraform-vm \\
     print("govc permissions.set -principal %s -role ocp-terraform-resource -propagate=false \"%s\"" % (vsphere_user, vm_resource_pool))
     print("govc permissions.set -principal %s -role ocp-terraform-vcenter -propagate=false \"/\"" % (vsphere_user))
 
+    ### Genero los comandos para quitar los permisos
     print("\n## Remove permissions from vCenter objects")
     print("govc permissions.remove -principal %s \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_folder))
     print("govc permissions.remove -principal %s \"%s\"" % (vsphere_user, vm_template_path))
@@ -153,14 +163,78 @@ govc role.create ocp-terraform-vm \\
     print("govc permissions.remove -principal %s \"%s\"" % (vsphere_user, vm_resource_pool))
     print("govc permissions.remove -principal %s \"/\"" % (vsphere_user))
 
+    ### Genero los comandos para eliminar los roles
+    print("## Remove vCenter roles")
+    print("govc role.remove ocp-terraform-vm")
+    print("govc role.remove ocp-terraform-network")
+    print("govc role.remove ocp-terraform-datastore")
+    print("govc role.remove ocp-terraform-resource")
+    print("govc role.remove ocp-terraform-vcenter")
+
+
+def permissions_dynamic_provisioning():
+    print("\n### Please provide the following data for Dynamic Provisioning")
+    dynamic_provisioning_user = raw_input('Dynamic Provisioning User: ')
+    dynamic_provisioning_datastore = raw_input('Dynamic Provisioning Datastore: ')
+
+    ### Genero los comandos para crear los roles
     print('''
-## Remove vCenter roles
-govc role.remove ocp-terraform-vm
-govc role.remove ocp-terraform-network
-govc role.remove ocp-terraform-datastore
-govc role.remove ocp-terraform-resource
-govc role.remove ocp-terraform-vcenter
+# StorageProfile.View (Profile-driven storage view) at the vCenter level
+govc role.create k8s-system-read-and-spbm-profile-view \\
+    StorageProfile.View
+
+# Low level file operations on the datastore
+govc role.create manage-k8s-volumes \\
+    Datastore.AllocateSpace \\
+    Datastore.FileManagement
+
+# Virtual Machine Privileges
+govc role.create manage-k8s-node-vms \\
+    Resource.AssignVMToPool \\
+    VirtualMachine.Config.AddExistingDisk \\
+    VirtualMachine.Config.AddNewDisk \\
+    VirtualMachine.Config.AddRemoveDevice \\
+    VirtualMachine.Config.RemoveDisk \\
+    VirtualMachine.Inventory.Create \\
+    VirtualMachine.Inventory.Delete \\
+    VirtualMachine.Config.Settings
     ''')
+
+    print("\n## Set Dynamic Provisioning permissions for vCenter objects")
+    print("govc permissions.set -principal %s -role ReadOnly -propagate=false '/%s'" % (dynamic_provisioning_user, vsphere_datacenter))
+    print("govc permissions.set -principal %s -role ReadOnly -propagate=false '/%s/datastore/%s'" % (dynamic_provisioning_user, vsphere_datacenter, dynamic_provisioning_datastore))
+    #print("govc permissions.set -principal %s -role ReadOnly -propagate=false '/$DATACENTER/host/$HOST'" % (dynamic_provisioning_user, vsphere_datacenter))
+    print("govc permissions.set -principal %s -role ReadOnly -propagate=false '/%s/vm/%s'" % (dynamic_provisioning_user, vsphere_datacenter, vm_folder))
+
+    print("govc permissions.set -principal %s -role k8s-system-read-and-spbm-profile-view -propagate=false /")
+    print("govc permissions.set -principal %s -role manage-k8s-volumes -propagate=false /%s/datastore/%s" % (dynamic_provisioning_user, vsphere_datacenter))
+    #print("govc permissions.set -principal %s -role manage-k8s-node-vms -propagate=true /%s/host/$HOST" % (dynamic_provisioning_user, vsphere_datacenter))
+    print("govc permissions.set -principal %s -role manage-k8s-node-vms -propagate=true /%s/vm/%s" % (dynamic_provisioning_user, vsphere_datacenter, vm_folder))
+
+    ### Genero los comandos para quitar los permisos
+    print("govc permissions.set -principal %s '/%s'" % (dynamic_provisioning_user, vsphere_datacenter))
+    print("govc permissions.set -principal %s '/%s/datastore/%s'" % (dynamic_provisioning_user, vsphere_datacenter, dynamic_provisioning_datastore))
+    print("govc permissions.set -principal %s '/$DATACENTER/host/$HOST'" % (dynamic_provisioning_user, vsphere_datacenter))
+    print("govc permissions.set -principal %s '/%s/vm/%s'" % (dynamic_provisioning_user, vsphere_datacenter, vm_folder))
+
+    print("govc permissions.set -principal %s /")
+    print("govc permissions.set -principal %s /%s/datastore/%s" % (dynamic_provisioning_user, vsphere_datacenter))
+    print("govc permissions.set -principal %s /%s/host/$HOST" % (dynamic_provisioning_user, vsphere_datacenter))
+    print("govc permissions.set -principal %s /%s/vm/%s" % (dynamic_provisioning_user, vsphere_datacenter, vm_folder))
+
+    print("\n## Remove Dynamic Provisioning permissions from vCenter objects")
+    print("govc permissions.remove -principal %s \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_folder))
+    print("govc permissions.remove -principal %s \"%s\"" % (vsphere_user, vm_template_path))
+    print("govc permissions.remove -principal %s \"/%s/network/%s\"" % (vsphere_user, vsphere_datacenter, vm_network))
+    print("govc permissions.remove -principal %s \"/%s/datastore/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_datastore))
+    print("govc permissions.remove -principal %s \"%s\"" % (vsphere_user, vm_resource_pool))
+    print("govc permissions.remove -principal %s \"/\"" % (vsphere_user))
+
+    ### Genero los comandos para eliminar los roles
+    print("## Remove Dynamic Provisioning roles")
+    print("govc role.remove k8s-system-read-and-spbm-profile-view")
+    print("govc role.remove manage-k8s-volumes")
+    print("govc role.remove manage-k8s-node-vms")
 
 
 def power():
@@ -357,19 +431,20 @@ host %s {
     print ("systemctl status dhcpd")
 
 
-# Secciones:
-# - perms
-# - power
-# - mac
-# - dns
-# - dhcp
 
 ### Verficar que me hayan pasado los parametros correctos
-if len(sys.argv) != 2:
+if len(sys.argv) != 3:
     print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Cantidad de parametros incorrecta")
-    print("USO: config-gen.py terraform.tfvars")
+    print('''
+USO: config-gen.py seccion terraform.tfvars
+Secciones:
+ - perms (Muestra los comandos de govc para gestionar los permisos del usuario de terraform)
+ - power (Muestra los comandos de govc para encender y apagar las VMs)
+ - mac   (Muestra los comandos de govc para fijar las MAC Address)
+ - dns   (Valida las entradas DNS)
+ - dhcp  (Genera la configuracion de un DHCP server [dhcpd])
+''')
     sys.exit(1)
-
 
 ### Validar prerequisitos: terraform, govc, dig, dhcpd
 print ("\n## Validando prerequisitos: terraform, govc, dig, dhcpd")
@@ -380,7 +455,7 @@ for cmd in ["terraform", "govc", "dig", "dhcpd"]:
 
 
 ### Proceso el archivo leyendo las variables del mismo, por suerte el formato de variables de terraform es igual al de python
-filename = sys.argv[1]
+filename = sys.argv[2]
 
 terraform_file = open(filename, "r")
 
@@ -397,6 +472,21 @@ for line in terraform_file:
       continue
 
     exec(line)
+
+
+### Verifico que el cluster domain contiene el cluster_id
+print("\n## Verificando cluster domain: " + cluster_domain)
+if cluster_domain.find(cluster_id) == -1:
+    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "El cluster domain esta mal configurado, no contiene el nombre del cluster: " + cluster_id)
+    sys.exit(1)
+    
+
+### Verifico que la carpeta tenga el nombre del cluster
+print("\n## Verificando carpeta: " + vm_folder)
+if os.path.basename(vm_folder) != cluster_id:
+    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "La carpeta de VMs debe tener el mismo nombre que el cluster: " + cluster_id)
+    print("ATENCION! Si no se respeta esta norma, entonces fallara el Dynamic Provisioning")
+    sys.exit(1)
 
 
 ## Establezco por default el entorno de govc con el usuario de terraform
@@ -434,6 +524,18 @@ for node in bootstrap_name+control_plane_names+compute_names:
             mac_address = line.split(": ")[1].strip()
             node_mac[node] = mac_address
 
-mac_address()
-dhcp_server()
+section = sys.argv[1]
+
+if section == "perms":
+    #permissions_terraform()
+    permissions_dynamic_provisioning()
+elif section == "power":
+    power()
+elif section == "mac":
+    mac_address()
+elif section == "dns":
+    dns_records()
+elif section == "dhcp":
+    dhcp_server()
+
 
