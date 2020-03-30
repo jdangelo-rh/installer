@@ -26,255 +26,163 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
-### Verficar que me hayan pasado los parametros correctos
-if len(sys.argv) != 2:
-    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Cantidad de parametros incorrecta")
-    print("USO: config-gen.py terraform.tfvars")
-    sys.exit(1)
-
-
-### Validar prerequisitos: terraform, govc, dig, dhcpd
-print ("\n## Validando prerequisitos: terraform, govc, dig, dhcpd")
-for cmd in ["terraform", "govc", "dig", "dhcpd"]:
-    if os.system("which " + cmd) != 0:
-        print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "El comando: " + cmd + " no se encuentra instalado")
-        sys.exit(1)
-
-
-### Proceso el archivo leyendo las variables del mismo, por suerte el formato de variables de terraform es igual al de python
-filename = sys.argv[1]
-
-terraform_file = open(filename, "r")
-
-print("\n## Procesando archivo: " + filename)
-
-for line in terraform_file:
-    #print(line)
-
-    comment = re.search("^//", line)
-    control_plane_ignition = re.search("END_OF_MASTER_IGNITION", line)
-    compute_ignition = re.search("END_OF_WORKER_IGNITION", line)
-
-    if (comment or control_plane_ignition or compute_ignition):
-      continue
-
-    exec(line)
-
-
-
-# os.environ['GOVC_USERNAME'] = raw_input('GOVC_USERNAME: ')
-# os.environ['GOVC_PASSWORD'] = getpass.getpass('GOVC_PASSWORD: ')
-# 
-# 
-# sys.exit(1)
-
-
-### Validar los parametros de govc
-print ("\n## Validando los parametros de govc")
-if  os.getenv('GOVC_URL') == None or \
-    os.getenv('GOVC_USERNAME') == None or \
-    os.getenv('GOVC_PASSWORD') == None or \
-    os.getenv('GOVC_NETWORK') == None or \
-    os.getenv('GOVC_DATASTORE') == None or \
-    os.getenv('GOVC_INSECURE') == None:
-
+def permissions():
+    print("\n### Please provide the credentials for the Admin user")
+    vsphere_admin_user = raw_input('vCenter Admin User: ')
+    vsphere_admin_password = getpass.getpass('vCenter Admin Password: ')
+    os.environ['GOVC_USERNAME'] = vsphere_admin_user
+    os.environ['GOVC_PASSWORD'] = vsphere_admin_password
     os.environ['GOVC_URL'] = vsphere_server
-    os.environ['GOVC_USERNAME'] = vsphere_user
-    os.environ['GOVC_PASSWORD'] = vsphere_password
-    os.environ['GOVC_NETWORK'] = vm_network
-    os.environ['GOVC_DATASTORE'] = vsphere_datastore
     os.environ['GOVC_INSECURE'] = "1"
 
-"""    
-    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "El entorno de govc no se encuentra configurado.")
-    print("Por favor configure el entorno especificando el valor de las siguientes variables:")
+    ### Genero los comandos para crear los roles
     print('''
-export GOVC_URL='vcenter.example.com'
-export GOVC_USERNAME='VSPHERE_ADMIN_USER'
-export GOVC_PASSWORD='VSPHERE_ADMIN_PASSWORD'
-export GOVC_NETWORK='VM Network'
-export GOVC_DATASTORE='Datastore'
-export GOVC_INSECURE=1 # If the host above uses a self-signed cert
-    ''')
-    sys.exit(1)
-"""
-
-### Genero los comandos para crear los roles
-print('''
 ## Role creation
 govc role.create ocp-terraform-network \\
-	Network.Assign
+    Network.Assign
 govc role.create ocp-terraform-datastore \\
-	Datastore.AllocateSpace \\
-	Datastore.FileManagement 
+    Datastore.AllocateSpace \\
+    Datastore.FileManagement 
 govc role.create ocp-terraform-vcenter \\
-	StorageProfile.View
+    StorageProfile.View
 govc role.create ocp-terraform-resource \\
-	Resource.AssignVAppToPool \\
-	Resource.AssignVMToPool \\
-	Resource.CreatePool \\
-	Resource.DeletePool
+    Resource.AssignVAppToPool \\
+    Resource.AssignVMToPool \\
+    Resource.CreatePool \\
+    Resource.DeletePool
 govc role.create ocp-terraform-vm \\
-	VApp.ApplicationConfig \\
-	VApp.Clone \\
-	VApp.ExtractOvfEnvironment \\
-	VApp.InstanceConfig VApp.ResourceConfig \\
-	Folder.Create Folder.Delete \\
-	VirtualMachine.Config.AddNewDisk \\
-	VirtualMachine.Config.AdvancedConfig \\
-	VirtualMachine.Config.CPUCount \\
-	VirtualMachine.Config.DiskExtend \\
-	VirtualMachine.Config.EditDevice \\
-	VirtualMachine.Config.Memory \\
-	VirtualMachine.Config.Rename \\
-	VirtualMachine.Config.Resource \\
-	VirtualMachine.Config.Settings \\
-	VirtualMachine.GuestOperations.Execute \\
-	VirtualMachine.GuestOperations.Modify \\
-	VirtualMachine.GuestOperations.ModifyAliases \\
-	VirtualMachine.GuestOperations.Query \\
-	VirtualMachine.GuestOperations.QueryAliases \\
-	VirtualMachine.Interact.ConsoleInteract \\
-	VirtualMachine.Interact.GuestControl \\
-	VirtualMachine.Interact.Pause \\
-	VirtualMachine.Interact.PowerOff \\
-	VirtualMachine.Interact.PowerOn \\
-	VirtualMachine.Interact.Reset \\
-	VirtualMachine.Interact.SetCDMedia \\
-	VirtualMachine.Interact.Suspend \\
-	VirtualMachine.Interact.ToolsInstall \\
-	VirtualMachine.Inventory.Create \\
-	VirtualMachine.Inventory.CreateFromExisting \\
-	VirtualMachine.Inventory.Delete \\
-	VirtualMachine.Inventory.Move \\
-	VirtualMachine.Inventory.Register \\
-	VirtualMachine.Inventory.Unregister \\
-	VirtualMachine.Provisioning.Clone \\
-	VirtualMachine.Provisioning.CloneTemplate \\
-	VirtualMachine.Provisioning.CreateTemplateFromVM \\
-	VirtualMachine.Provisioning.Customize \\
-	VirtualMachine.Provisioning.DeployTemplate \\
-	VirtualMachine.Provisioning.DiskRandomAccess \\
-	VirtualMachine.Provisioning.DiskRandomRead \\
-	VirtualMachine.Provisioning.FileRandomAccess \\
-	VirtualMachine.Provisioning.GetVmFiles \\
-	VirtualMachine.Provisioning.MarkAsTemplate \\
-	VirtualMachine.Provisioning.MarkAsVM \\
-	VirtualMachine.Provisioning.ModifyCustSpecs \\
-	VirtualMachine.Provisioning.PromoteDisks \\
-	VirtualMachine.Provisioning.PutVmFiles \\
-	VirtualMachine.Provisioning.ReadCustSpecs
-''')
+    VApp.ApplicationConfig \\
+    VApp.Clone \\
+    VApp.ExtractOvfEnvironment \\
+    VApp.InstanceConfig VApp.ResourceConfig \\
+    Folder.Create Folder.Delete \\
+    VirtualMachine.Config.AddNewDisk \\
+    VirtualMachine.Config.AdvancedConfig \\
+    VirtualMachine.Config.CPUCount \\
+    VirtualMachine.Config.DiskExtend \\
+    VirtualMachine.Config.EditDevice \\
+    VirtualMachine.Config.Memory \\
+    VirtualMachine.Config.Rename \\
+    VirtualMachine.Config.Resource \\
+    VirtualMachine.Config.Settings \\
+    VirtualMachine.GuestOperations.Execute \\
+    VirtualMachine.GuestOperations.Modify \\
+    VirtualMachine.GuestOperations.ModifyAliases \\
+    VirtualMachine.GuestOperations.Query \\
+    VirtualMachine.GuestOperations.QueryAliases \\
+    VirtualMachine.Interact.ConsoleInteract \\
+    VirtualMachine.Interact.GuestControl \\
+    VirtualMachine.Interact.Pause \\
+    VirtualMachine.Interact.PowerOff \\
+    VirtualMachine.Interact.PowerOn \\
+    VirtualMachine.Interact.Reset \\
+    VirtualMachine.Interact.SetCDMedia \\
+    VirtualMachine.Interact.Suspend \\
+    VirtualMachine.Interact.ToolsInstall \\
+    VirtualMachine.Inventory.Create \\
+    VirtualMachine.Inventory.CreateFromExisting \\
+    VirtualMachine.Inventory.Delete \\
+    VirtualMachine.Inventory.Move \\
+    VirtualMachine.Inventory.Register \\
+    VirtualMachine.Inventory.Unregister \\
+    VirtualMachine.Provisioning.Clone \\
+    VirtualMachine.Provisioning.CloneTemplate \\
+    VirtualMachine.Provisioning.CreateTemplateFromVM \\
+    VirtualMachine.Provisioning.Customize \\
+    VirtualMachine.Provisioning.DeployTemplate \\
+    VirtualMachine.Provisioning.DiskRandomAccess \\
+    VirtualMachine.Provisioning.DiskRandomRead \\
+    VirtualMachine.Provisioning.FileRandomAccess \\
+    VirtualMachine.Provisioning.GetVmFiles \\
+    VirtualMachine.Provisioning.MarkAsTemplate \\
+    VirtualMachine.Provisioning.MarkAsVM \\
+    VirtualMachine.Provisioning.ModifyCustSpecs \\
+    VirtualMachine.Provisioning.PromoteDisks \\
+    VirtualMachine.Provisioning.PutVmFiles \\
+    VirtualMachine.Provisioning.ReadCustSpecs
+    ''')
 
-## Busco la carpeta donde esta alojado el template
-govc_find_proc = subprocess.Popen("govc find -type m -name=%s" % (vm_template), shell=True, stdout=subprocess.PIPE)
+    ## Busco la carpeta donde esta alojado el template
+    govc_find_proc = subprocess.Popen("govc find -type m -name=%s" % (vm_template), shell=True, stdout=subprocess.PIPE)
 
-vm_template_path = ""
+    vm_template_path = ""
 
-for line in iter(govc_find_proc.stdout.readline, ""):
-    vm_template_path = line.rstrip()
-    break
+    for line in iter(govc_find_proc.stdout.readline, ""):
+        vm_template_path = line.rstrip()
+        break
 
-if vm_template_path == "":
-    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "No se encontro la ruta del template especificado: " + vm_template)
-else:
-    print("Se encontro el template en la ruta: " + vm_template_path)
+    if vm_template_path == "":
+        print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "No se encontro la ruta del template especificado: " + vm_template)
+    else:
+        print("Se encontro el template en la ruta: " + vm_template_path)
 
-govc_find_proc.stdout.close()
+    govc_find_proc.stdout.close()
 
-## Busco el nombre del Resource Pool
-govc_find_proc = subprocess.Popen("for ResourcePool in $(govc find / -type p); do govc ls -l -i $ResourcePool; done", shell=True, stdout=subprocess.PIPE)
+    ## Busco el nombre del Resource Pool
+    govc_find_proc = subprocess.Popen("for ResourcePool in $(govc find / -type p); do govc ls -l -i $ResourcePool; done", shell=True, stdout=subprocess.PIPE)
 
-vm_resource_pool = ""
+    vm_resource_pool = ""
 
-for line in iter(govc_find_proc.stdout.readline, ""):
-    if line.find(vm_resource_pool_id) != -1:
-        #vm_resource_pool = line.rstrip()
-        #print(line.rstrip())
-        vm_resource_pool = line.rstrip().split(" ")[1]
+    for line in iter(govc_find_proc.stdout.readline, ""):
+        if line.find(vm_resource_pool_id) != -1:
+            #vm_resource_pool = line.rstrip()
+            #print(line.rstrip())
+            vm_resource_pool = line.rstrip().split(" ")[1]
 
-if vm_resource_pool == "":
-    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "No se encontro el resource pool asociado al ID especificado: " + vm_resource_pool_id)
-else:
-    print("Se encontro el resource group en la ruta: " + vm_resource_pool)
+    if vm_resource_pool == "":
+        print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "No se encontro el resource pool asociado al ID especificado: " + vm_resource_pool_id)
+    else:
+        print("Se encontro el resource group en la ruta: " + vm_resource_pool)
 
-govc_find_proc.stdout.close()
+    govc_find_proc.stdout.close()
 
-### Genero los comandos para establecer los permisos
-print("\n## Set permissions on vCenter objects")
-print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=true \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_folder))
-print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=false \"%s\"" % (vsphere_user, vm_template_path))
-print("govc permissions.set -principal %s -role ocp-terraform-network -propagate=false \"/%s/network/%s\"" % (vsphere_user, vsphere_datacenter, vm_network))
-print("govc permissions.set -principal %s -role ocp-terraform-datastore -propagate=false \"/%s/datastore/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_datastore))
-print("govc permissions.set -principal %s -role ocp-terraform-resource -propagate=false \"%s\"" % (vsphere_user, vm_resource_pool))
-print("govc permissions.set -principal %s -role ocp-terraform-vcenter -propagate=false \"/\"" % (vsphere_user))
+    ### Genero los comandos para establecer los permisos
+    print("\n## Set permissions on vCenter objects")
+    print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=true \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_folder))
+    print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=false \"%s\"" % (vsphere_user, vm_template_path))
+    print("govc permissions.set -principal %s -role ocp-terraform-network -propagate=false \"/%s/network/%s\"" % (vsphere_user, vsphere_datacenter, vm_network))
+    print("govc permissions.set -principal %s -role ocp-terraform-datastore -propagate=false \"/%s/datastore/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_datastore))
+    print("govc permissions.set -principal %s -role ocp-terraform-resource -propagate=false \"%s\"" % (vsphere_user, vm_resource_pool))
+    print("govc permissions.set -principal %s -role ocp-terraform-vcenter -propagate=false \"/\"" % (vsphere_user))
 
-print("\n## Remove permissions from vCenter objects")
-print("govc permissions.remove -principal %s \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_folder))
-print("govc permissions.remove -principal %s \"%s\"" % (vsphere_user, vm_template_path))
-print("govc permissions.remove -principal %s \"/%s/network/%s\"" % (vsphere_user, vsphere_datacenter, vm_network))
-print("govc permissions.remove -principal %s \"/%s/datastore/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_datastore))
-print("govc permissions.remove -principal %s \"%s\"" % (vsphere_user, vm_resource_pool))
-print("govc permissions.remove -principal %s \"/\"" % (vsphere_user))
+    print("\n## Remove permissions from vCenter objects")
+    print("govc permissions.remove -principal %s \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_folder))
+    print("govc permissions.remove -principal %s \"%s\"" % (vsphere_user, vm_template_path))
+    print("govc permissions.remove -principal %s \"/%s/network/%s\"" % (vsphere_user, vsphere_datacenter, vm_network))
+    print("govc permissions.remove -principal %s \"/%s/datastore/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_datastore))
+    print("govc permissions.remove -principal %s \"%s\"" % (vsphere_user, vm_resource_pool))
+    print("govc permissions.remove -principal %s \"/\"" % (vsphere_user))
 
-print('''
+    print('''
 ## Remove vCenter roles
-govc role.remove ocp-terraform-vm
 govc role.remove ocp-terraform-vm
 govc role.remove ocp-terraform-network
 govc role.remove ocp-terraform-datastore
 govc role.remove ocp-terraform-resource
 govc role.remove ocp-terraform-vcenter
-''')
-
-sys.exit(1)
-
-### Genero los comandos para apagar las VMs
-print("\n## Apagado de las VMs")
-for node in bootstrap_name+control_plane_names+compute_names:
-    print("govc vm.power -off /%s/vm/%s/%s" % (vsphere_datacenter, vm_folder, node))
+    ''')
 
 
-### Genero los comandos para encender las VMs
-print("\n## Levantar las VMs")
-for node in bootstrap_name+control_plane_names+compute_names:
-    print("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, vm_folder, node))
+def power():
+    ### Genero los comandos para apagar las VMs
+    print("\n## Apagado de las VMs")
+    for node in bootstrap_name+control_plane_names+compute_names:
+        print("govc vm.power -off /%s/vm/%s/%s" % (vsphere_datacenter, vm_folder, node))
 
 
-### Genero los comandos para setar las MAC Address
-print("\n## Setear MAC addressess")
-
-node_mac = {}
-for node in bootstrap_name+control_plane_names+compute_names:
-    govc_proc = subprocess.Popen("govc device.info -vm='/%s/vm/%s/%s' ethernet-0" % (vsphere_datacenter, vm_folder, node), stdout=subprocess.PIPE, shell=True)
-
-    node_mac[node] = "00:00:00:00:00:00"
-
-    for line in iter(govc_proc.stdout.readline, ""):
-        #print line
-        mac_re = re.search("MAC Address", line)
-
-        if (mac_re):
-            mac_address = line.split(": ")[1].strip()
-            node_mac[node] = mac_address
-            print ("govc vm.network.change -vm /%s/vm/%s/%s -net '%s' -net.address %s ethernet-0" % (vsphere_datacenter, vm_folder, node, vm_network, mac_address))
+    ### Genero los comandos para encender las VMs
+    print("\n## Levantar las VMs")
+    for node in bootstrap_name+control_plane_names+compute_names:
+        print("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, vm_folder, node))
 
 
+def mac_address():
+    ### Genero los comandos para setar las MAC Address
+    print("\n## Setear MAC addressess")
 
-### Verificar que los registros DNS esten bien
-print("\n## Verificando registros DNS")
+    for node in node_mac:
+        print ("govc vm.network.change -vm /%s/vm/%s/%s -net '%s' -net.address %s ethernet-0" % (vsphere_datacenter, vm_folder, node, vm_network, node_mac[node]))
 
-# Generacion de mapping entre hostnames y direcciones IP
-hostname_ip = {}
-
-for i in range(len(bootstrap_name)):
-    hostname_ip[bootstrap_name[i]] = bootstrap_ip[i]
-
-for i in range(len(control_plane_names)):
-    hostname_ip[control_plane_names[i]] = control_plane_ips[i]
-
-for i in range(len(compute_names)):
-    hostname_ip[compute_names[i]] = compute_ips[i]
 
 # Verificacion de registros DNS directo y reverso
 def dns_verify(dns_ip):
@@ -318,68 +226,74 @@ def dns_verify(dns_ip):
 
     print ("\nRegistros DNS A y reverso" + bcolors.OKGREEN + " * OK *" + bcolors.ENDC)
 
-for dns_ip in dns_ips:
-    #print(dns_ip)
-    dns_verify(dns_ip)
 
-#sys.exit(1)
+### Verificar que los registros DNS esten bien
+def dns_records():
+    print("\n## Verificando registros DNS")
 
-# Verificacion de registros etcd
-print("\n## Verificacion de registros etcd")
-for i in range(len(control_plane_names)):
-    dig_proc = subprocess.Popen("dig etcd-%s.%s +short" % (i, cluster_domain), stdout=subprocess.PIPE, shell=True)
+    # Verificacion de registros A
+    for dns_ip in dns_ips:
+        #print(dns_ip)
+        dns_verify(dns_ip)
 
-    found = False
+    # Verificacion de registros etcd
+    print("\n## Verificacion de registros etcd")
+    for i in range(len(control_plane_names)):
+        dig_proc = subprocess.Popen("dig etcd-%s.%s +short" % (i, cluster_domain), stdout=subprocess.PIPE, shell=True)
 
-    for line in iter(dig_proc.stdout.readline, ""):
-        if line.strip() == hostname_ip[control_plane_names[i]]:
-          found = True
+        found = False
 
-    if found == False:
-      print (bcolors.FAIL + " * ERROR * " +  bcolors.ENDC + "Fallo la verificacion de DNS *reverso* del host: " + control_plane_names[i])
-      sys.exit(1)
+        for line in iter(dig_proc.stdout.readline, ""):
+            if line.strip() == hostname_ip[control_plane_names[i]]:
+              found = True
 
-print ("\nRegistros DNS etcd" + bcolors.OKGREEN + " * OK *" + bcolors.ENDC)
+        if found == False:
+          print (bcolors.FAIL + " * ERROR * " +  bcolors.ENDC + "Fallo la verificacion de DNS *reverso* del host: " + control_plane_names[i])
+          sys.exit(1)
 
-# Verificacion de registros SRV
-print("\n## Verificacion de registros SRV")
-print ("dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain)
-os.system("dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain)
+    print ("\nRegistros DNS etcd" + bcolors.OKGREEN + " * OK *" + bcolors.ENDC)
 
-# Verificacion de APIs
-print("\n## Verificacion de APIs")
-print ("dig api.%s +short" % cluster_domain)
-os.system("dig api.%s +short" % cluster_domain)
+    # Verificacion de registros SRV
+    print("\n## Verificacion de registros SRV")
+    print ("dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain)
+    os.system("dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain)
 
-print ("dig api-int.%s +short" % cluster_domain)
-os.system("dig api-int.%s +short" % cluster_domain)
+    # Verificacion de APIs
+    print("\n## Verificacion de APIs")
+    print ("dig api.%s +short" % cluster_domain)
+    os.system("dig api.%s +short" % cluster_domain)
 
-print ("dig *.apps.%s +short" % cluster_domain)
-os.system("dig *.apps.%s +short" % cluster_domain)
+    print ("dig api-int.%s +short" % cluster_domain)
+    os.system("dig api-int.%s +short" % cluster_domain)
+
+    print ("dig *.apps.%s +short" % cluster_domain)
+    os.system("dig *.apps.%s +short" % cluster_domain)
+
 
 ### Genero la configuracion del server DHCP
-# Grabar un archivo dhpcd.conf y mostrar el comando para copiarlo a /etc + start/stop/enable del dhpcd + yum install (suponer que arrancamos de 0) + echo "" > /var/lib/dhpcd/lease
-print("\n## Configurando y levantando el DHCP server")
+def dhcp_server():
+    # Grabar un archivo dhpcd.conf y mostrar el comando para copiarlo a /etc + start/stop/enable del dhpcd + yum install (suponer que arrancamos de 0) + echo "" > /var/lib/dhpcd/lease
+    print("\n## Configurando y levantando el DHCP server")
 
-# Crear un archivo de configuracion /etc/dhcp/dhcpd.conf con las MAC Address
-dhcpd_file = os.open("dhcpd.conf", os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
+    # Crear un archivo de configuracion /etc/dhcp/dhcpd.conf con las MAC Address
+    dhcpd_file = os.open("dhcpd.conf", os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
 
-# Obtengo la subred y la mascara
-def cidr_to_netmask(cidr):
-  cidr = int(cidr)
-  mask = (0xffffffff >> (32 - cidr)) << (32 - cidr)
-  return (str( (0xff000000 & mask) >> 24)   + '.' +
-          str( (0x00ff0000 & mask) >> 16)   + '.' +
-          str( (0x0000ff00 & mask) >> 8)    + '.' +
-          str( (0x000000ff & mask)))
+    # Obtengo la subred y la mascara
+    def cidr_to_netmask(cidr):
+      cidr = int(cidr)
+      mask = (0xffffffff >> (32 - cidr)) << (32 - cidr)
+      return (str( (0xff000000 & mask) >> 24)   + '.' +
+              str( (0x00ff0000 & mask) >> 16)   + '.' +
+              str( (0x0000ff00 & mask) >> 8)    + '.' +
+              str( (0x000000ff & mask)))
 
-subnet = machine_cidr.split("/")[0]
-cidr = machine_cidr.split("/")[1]
+    subnet = machine_cidr.split("/")[0]
+    cidr = machine_cidr.split("/")[1]
 
-netmask = cidr_to_netmask(cidr)
+    netmask = cidr_to_netmask(cidr)
 
-dhcpd_conf_general = \
-'''
+    dhcpd_conf_general = \
+    '''
 # dhcpd.conf
 # Generated by: config-gen.py
 
@@ -396,49 +310,130 @@ log-facility local7;
 subnet %s netmask %s {
     option routers %s;
 }
-''' % (cluster_domain, dns_ips[0], dns_ips[1], dns_ips[2], subnet, netmask, gateway_ip)
+    ''' % (cluster_domain, dns_ips[0], dns_ips[1], dns_ips[2], subnet, netmask, gateway_ip)
 
-dhcpd_conf_hosts = ""
+    dhcpd_conf_hosts = ""
 
-for node in bootstrap_name+control_plane_names+compute_names:
-    dhcpd_conf_hosts += \
-    '''
+    for node in bootstrap_name+control_plane_names+compute_names:
+        dhcpd_conf_hosts += \
+        '''
 host %s {
   hardware ethernet %s;
   option host-name "%s";
   fixed-address %s;
 }
-    ''' % (node, node_mac[node], node + "." + cluster_domain, hostname_ip[node])
-    #print(node + " -> " + node_mac[node])
-    #print (test)
+        ''' % (node, node_mac[node], node + "." + cluster_domain, hostname_ip[node])
+        #print(node + " -> " + node_mac[node])
+        #print (test)
 
-dhcpd_conf = dhcpd_conf_general + dhcpd_conf_hosts + "\n"
+    dhcpd_conf = dhcpd_conf_general + dhcpd_conf_hosts + "\n"
 
-#print(dhcpd_conf)
-#sys.exit(0)
+    #print(dhcpd_conf)
+    #sys.exit(0)
 
-ret = os.write(dhcpd_file, dhcpd_conf)
+    ret = os.write(dhcpd_file, dhcpd_conf)
 
-os.close(dhcpd_file)
+    os.close(dhcpd_file)
 
-os.chmod("dhcpd.conf", stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+    os.chmod("dhcpd.conf", stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
 
-# Hacer backup del archivo dhcpd.conf
-os.system("cp /etc/dhcp/dhcpd.conf /etc/dhcp/dhcpd.conf-" + datetime.datetime.now().strftime("%Y%m%d%M%S"))
+    # Hacer backup del archivo dhcpd.conf
+    os.system("cp /etc/dhcp/dhcpd.conf /etc/dhcp/dhcpd.conf-" + datetime.datetime.now().strftime("%Y%m%d%M%S"))
 
-# Copiar el archivo generado a /etc/dhcp/dhcpd.conf
-print ("cp dhcpd.conf /etc/dhcp/dhcpd.conf")
+    # Copiar el archivo generado a /etc/dhcp/dhcpd.conf
+    print ("cp dhcpd.conf /etc/dhcp/dhcpd.conf")
 
-# Detener el dhcpd
-print ("systemctl stop dhcpd")
+    # Detener el dhcpd
+    print ("systemctl stop dhcpd")
 
-# Borrar los leases
-print ("echo '' > /var/lib/dhcpd/dhcpd.leases")
-print ("echo '' > /var/lib/dhcpd/dhcpd.leases~")
+    # Borrar los leases
+    print ("echo '' > /var/lib/dhcpd/dhcpd.leases")
+    print ("echo '' > /var/lib/dhcpd/dhcpd.leases~")
 
-# Iniciar el dhcpd
-print ("systemctl start dhcpd")
+    # Iniciar el dhcpd
+    print ("systemctl start dhcpd")
 
-# Mostrar el status
-print ("systemctl status dhcpd")
+    # Mostrar el status
+    print ("systemctl status dhcpd")
+
+
+# Secciones:
+# - perms
+# - power
+# - mac
+# - dns
+# - dhcp
+
+### Verficar que me hayan pasado los parametros correctos
+if len(sys.argv) != 2:
+    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Cantidad de parametros incorrecta")
+    print("USO: config-gen.py terraform.tfvars")
+    sys.exit(1)
+
+
+### Validar prerequisitos: terraform, govc, dig, dhcpd
+print ("\n## Validando prerequisitos: terraform, govc, dig, dhcpd")
+for cmd in ["terraform", "govc", "dig", "dhcpd"]:
+    if os.system("which " + cmd) != 0:
+        print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "El comando: " + cmd + " no se encuentra instalado")
+        sys.exit(1)
+
+
+### Proceso el archivo leyendo las variables del mismo, por suerte el formato de variables de terraform es igual al de python
+filename = sys.argv[1]
+
+terraform_file = open(filename, "r")
+
+print("\n## Procesando archivo: " + filename)
+
+for line in terraform_file:
+    #print(line)
+
+    comment = re.search("^//", line)
+    control_plane_ignition = re.search("END_OF_MASTER_IGNITION", line)
+    compute_ignition = re.search("END_OF_WORKER_IGNITION", line)
+
+    if (comment or control_plane_ignition or compute_ignition):
+      continue
+
+    exec(line)
+
+
+## Establezco por default el entorno de govc con el usuario de terraform
+os.environ['GOVC_URL'] = vsphere_server
+os.environ['GOVC_INSECURE'] = "1"
+
+os.environ['GOVC_USERNAME'] = vsphere_user
+os.environ['GOVC_PASSWORD'] = vsphere_password
+
+## Creo mapping entre hostnames y direcciones IP
+hostname_ip = {}
+
+for i in range(len(bootstrap_name)):
+    hostname_ip[bootstrap_name[i]] = bootstrap_ip[i]
+
+for i in range(len(control_plane_names)):
+    hostname_ip[control_plane_names[i]] = control_plane_ips[i]
+
+for i in range(len(compute_names)):
+    hostname_ip[compute_names[i]] = compute_ips[i]
+
+## Creo mapping entre nodos y MAC Address
+node_mac = {}
+
+for node in bootstrap_name+control_plane_names+compute_names:
+    govc_proc = subprocess.Popen("govc device.info -vm='/%s/vm/%s/%s' ethernet-0" % (vsphere_datacenter, vm_folder, node), stdout=subprocess.PIPE, shell=True)
+
+    node_mac[node] = "00:00:00:00:00:00"
+
+    for line in iter(govc_proc.stdout.readline, ""):
+        #print line
+        mac_re = re.search("MAC Address", line)
+
+        if (mac_re):
+            mac_address = line.split(": ")[1].strip()
+            node_mac[node] = mac_address
+
+mac_address()
+dhcp_server()
 
