@@ -203,18 +203,18 @@ govc_find_proc.stdout.close()
 ### Genero los comandos para establecer los permisos
 print("\n## Set permissions on vCenter objects")
 print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=true \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_folder))
-print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=false \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_template_path))
+print("govc permissions.set -principal %s -role ocp-terraform-vm -propagate=false \"%s\"" % (vsphere_user, vm_template_path))
 print("govc permissions.set -principal %s -role ocp-terraform-network -propagate=false \"/%s/network/%s\"" % (vsphere_user, vsphere_datacenter, vm_network))
 print("govc permissions.set -principal %s -role ocp-terraform-datastore -propagate=false \"/%s/datastore/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_datastore))
-print("govc permissions.set -principal %s -role ocp-terraform-resource -propagate=false \"/%s\"" % (vsphere_user, vm_resource_pool))
+print("govc permissions.set -principal %s -role ocp-terraform-resource -propagate=false \"%s\"" % (vsphere_user, vm_resource_pool))
 print("govc permissions.set -principal %s -role ocp-terraform-vcenter -propagate=false \"/\"" % (vsphere_user))
 
 print("\n## Remove permissions from vCenter objects")
 print("govc permissions.remove -principal %s \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_folder))
-print("govc permissions.remove -principal %s \"/%s/vm/%s\"" % (vsphere_user, vsphere_datacenter, vm_template_path))
+print("govc permissions.remove -principal %s \"%s\"" % (vsphere_user, vm_template_path))
 print("govc permissions.remove -principal %s \"/%s/network/%s\"" % (vsphere_user, vsphere_datacenter, vm_network))
 print("govc permissions.remove -principal %s \"/%s/datastore/%s\"" % (vsphere_user, vsphere_datacenter, vsphere_datastore))
-print("govc permissions.remove -principal %s \"/%s\"" % (vsphere_user, vm_resource_pool))
+print("govc permissions.remove -principal %s \"%s\"" % (vsphere_user, vm_resource_pool))
 print("govc permissions.remove -principal %s \"/\"" % (vsphere_user))
 
 print('''
