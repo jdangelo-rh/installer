@@ -23,7 +23,7 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-# Verficar que me hayan pasado los parametros correctos
+### Verficar que me hayan pasado los parametros correctos
 if len(sys.argv) != 2:
     print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Cantidad de parametros incorrecta")
     print("USO: config-gen.py terraform.tfvars")
@@ -34,7 +34,30 @@ print ("\n## Validando prerequisitos: terraform, govc, dig, dhcpd")
 for cmd in ["terraform", "govc", "dig", "dhcpd"]:
     if os.system("which " + cmd) != 0:
         print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " el comando: " + cmd + " no se encuentra instalado")
-        #sys.exit(1)
+        sys.exit(1)
+
+
+### Validar los parametros de govc
+print ("\n## Validando los parametros de govc")
+print(os.getenv('GOVC_URL'))
+if  os.getenv('GOVC_URL') == None or \
+    os.getenv('GOVC_USERNAME') == None or \
+    os.getenv('GOVC_PASSWORD') == None or \
+    os.getenv('GOVC_NETWORK') == None or \
+    os.getenv('GOVC_DATASTORE') == None or \
+    os.getenv('GOVC_INSECURE') == None:
+    print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + " el entorno de govc no se encuentra configurado.")
+    print("Por favor especifique el valor de las siguientes variables:")
+    print('''
+export GOVC_URL='vcenter.example.com'
+export GOVC_USERNAME='VSPHERE_ADMIN_USER'
+export GOVC_PASSWORD='VSPHERE_ADMIN_PASSWORD'
+export GOVC_NETWORK='VM Network'
+export GOVC_DATASTORE='Datastore'
+export GOVC_INSECURE=1 # If the host above uses a self-signed cert
+    ''')
+    sys.exit(1)
+
 
 ### Proceso el archivo leyendo las variables del mismo, por suerte el formato de variables de terraform es igual al de python
 filename = sys.argv[1]
