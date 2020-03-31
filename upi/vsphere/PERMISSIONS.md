@@ -43,6 +43,31 @@ ocp-terraform-vcenter | vCenter | No | Profile-driven storage view
 
 Example:
 ```
+# CLI Role creation
+govc role.create ocp-terraform-network Network.Assign
+govc role.create ocp-terraform-datastore Datastore.AllocateSpace Datastore.FileManagement 
+govc role.create ocp-terraform-vcenter StorageProfile.View
+govc role.create ocp-terraform-resource Resource.AssignVAppToPool Resource.AssignVMToPool Resource.CreatePool Resource.DeletePool
+govc role.create ocp-terraform-vm \
+	VApp.ApplicationConfig VApp.Clone VApp.ExtractOvfEnvironment VApp.InstanceConfig VApp.ResourceConfig \
+	Folder.Create Folder.Delete \
+	VirtualMachine.Config.AddNewDisk VirtualMachine.Config.AdvancedConfig VirtualMachine.Config.CPUCount \
+	VirtualMachine.Config.DiskExtend VirtualMachine.Config.EditDevice VirtualMachine.Config.Memory \
+	VirtualMachine.Config.Rename VirtualMachine.Config.Resource VirtualMachine.Config.Settings \
+	VirtualMachine.GuestOperations.Execute VirtualMachine.GuestOperations.Modify VirtualMachine.GuestOperations.ModifyAliases \
+	VirtualMachine.GuestOperations.Query VirtualMachine.GuestOperations.QueryAliases \
+	VirtualMachine.Interact.ConsoleInteract VirtualMachine.Interact.GuestControl VirtualMachine.Interact.Pause \
+	VirtualMachine.Interact.PowerOff VirtualMachine.Interact.PowerOn VirtualMachine.Interact.Reset \
+	VirtualMachine.Interact.SetCDMedia VirtualMachine.Interact.Suspend VirtualMachine.Interact.ToolsInstall \
+	VirtualMachine.Inventory.Create VirtualMachine.Inventory.CreateFromExisting VirtualMachine.Inventory.Delete \
+	VirtualMachine.Inventory.Move VirtualMachine.Inventory.Register VirtualMachine.Inventory.Unregister \
+	VirtualMachine.Provisioning.Clone VirtualMachine.Provisioning.CloneTemplate VirtualMachine.Provisioning.CreateTemplateFromVM \
+	VirtualMachine.Provisioning.Customize VirtualMachine.Provisioning.DeployTemplate VirtualMachine.Provisioning.DiskRandomAccess \
+	VirtualMachine.Provisioning.DiskRandomRead VirtualMachine.Provisioning.FileRandomAccess VirtualMachine.Provisioning.GetVmFiles \
+	VirtualMachine.Provisioning.MarkAsTemplate VirtualMachine.Provisioning.MarkAsVM VirtualMachine.Provisioning.ModifyCustSpecs \
+	VirtualMachine.Provisioning.PromoteDisks VirtualMachine.Provisioning.PutVmFiles VirtualMachine.Provisioning.ReadCustSpecs
+
+# CLI Permissions set
 govc permissions.set -principal ocp-terraform@vsphere.local -role ocp-terraform-vm -propagate=true "/Datacenter/vm/openshift/ocp"
 govc permissions.set -principal ocp-terraform@vsphere.local -role ocp-terraform-vm -propagate=false "/Datacenter/vm/templates/rhcos"
 govc permissions.set -principal ocp-terraform@vsphere.local -role ocp-terraform-network -propagate=false "/Datacenter/network/VM Network"
