@@ -3,41 +3,51 @@
 
 In order to use Terraform provider as non priviledged user, some Roles within vCenter must be assigned the following privileges:
 
-- Datastore [Role: ocp-terraform-datastore]
+- Datastore (Role: ocp-terraform-datastore)
   - Allocate space
   - Low level file operations
-- Folder [Role: ocp-terraform-vm]
+- Folder (Role: ocp-terraform-vm)
   - Create folder
   - Delete folder
-- StorageProfile [Role: ocp-terraform-vcenter]
+- StorageProfile (Role: ocp-terraform-vcenter]
   - View
-- Network [Role: ocp-terraform-network]
+- Network (Role: ocp-terraform-network)
   - Assign network
-- Resource [Role: ocp-terraform-resource]
+- Resource (Role: ocp-terraform-resource)
   - Assign vApp to resource pool
   - Assign virtual machine to resource pool
   - Create resource pool
   - Remove resource pool
-- vApp [Role: ocp-terraform-vm]
+- vApp (Role: ocp-terraform-vm)
   - Clone
   - View OVF environment
   - vApp application configuration
   - vApp instance configuration
   - vApp resource configuration
-- Virtual machine [Role: ocp-terraform-vm]
+- Virtual machine (Role: ocp-terraform-vm)
   - Change Configuration (all)
   - Edit Inventory (all)
   - Guest operations (all)
   - Interaction (all)
   - Provisioning (all)
 
-And these roles have to be given permission on the following objects:
-- [Role: ocp-terraform-vm] "/Datacenter/vm/Production/ocp-folder" (The folder where VMs will be alocated, with propagate to children)
-- [Role: ocp-terraform-vm] "/Datacenter/vm/templates/rhcos-4.3.8" (The OVA template that will be cloned)
-- [ocp-terraform-network] "/Datacenter/network/VM Network" (The VM Network the VMs will attach  to)
-- [ocp-terraform-datastore] "/Datacenter/datastore/Datastore" (The Datastore where the VMs disk0 will reside)
-- [Role: ocp-terraform-resource] "/Datacenter/host/Cluster/Resources/openshift" (The Resource Group the VMs will attach to)
-- [Role: ocp-terraform-vcenter] "/" (vCenter root)
+And these roles have to be given permission on the following entities:
+Role | Entity | Propagate to Children | Description
+---- | ------ | --------- | -----------
+ocp-terraform-vm | VM Folder | Yes | The folder where VMs will be alocated
+ocp-terraform-vm | Virtual Machine | No | The OVA template that will be cloned
+ocp-terraform-network | VM Network | No | The VM Network the VMs will attach  to
+ocp-terraform-datastore | Datastore | No | The Datastore where the VMs disk0 will reside
+ocp-terraform-resource | Resource Pool |  No | The Resource Pool the VMs will we added to
+ocp-terraform-vcenter | vCenter | No | Profile-driven storage view
+
+Example:
+govc permissions.set -principal ocp-terraform@vsphere.local -role ocp-terraform-vm -propagate=true "/Datacenter/vm/openshift/ocp"
+govc permissions.set -principal ocp-terrafor@vsphere.local -role ocp-terraform-vm -propagate=false "/Datacenter/vm/templates/rhcos"
+govc permissions.set -principal ocp-terrafor@vsphere.local -role ocp-terraform-network -propagate=false "/Datacenter/network/VM Network"
+govc permissions.set -principal ocp-terrafor@vsphere.local -role ocp-terraform-datastore -propagate=false "/Datacenter/datastore/Datastore"
+govc permissions.set -principal ocp-terrafor@vsphere.local -role ocp-terraform-resource -propagate=false "/Datacenter/host/Cluster/Resources/openshift"
+govc permissions.set -principal ocp-terrafor@vsphere.local -role ocp-terraform-vcenter -propagate=false "/"
 
 The config-gen.py script generates the commands needed to create these roles and assign them to the corresponding vCenter objects.
 
