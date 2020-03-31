@@ -42,12 +42,14 @@ ocp-terraform-resource | Resource Pool |  No | The Resource Pool the VMs will we
 ocp-terraform-vcenter | vCenter | No | Profile-driven storage view
 
 Example:
+```
 govc permissions.set -principal ocp-terraform@vsphere.local -role ocp-terraform-vm -propagate=true "/Datacenter/vm/openshift/ocp"
 govc permissions.set -principal ocp-terrafor@vsphere.local -role ocp-terraform-vm -propagate=false "/Datacenter/vm/templates/rhcos"
 govc permissions.set -principal ocp-terrafor@vsphere.local -role ocp-terraform-network -propagate=false "/Datacenter/network/VM Network"
 govc permissions.set -principal ocp-terrafor@vsphere.local -role ocp-terraform-datastore -propagate=false "/Datacenter/datastore/Datastore"
 govc permissions.set -principal ocp-terrafor@vsphere.local -role ocp-terraform-resource -propagate=false "/Datacenter/host/Cluster/Resources/openshift"
 govc permissions.set -principal ocp-terrafor@vsphere.local -role ocp-terraform-vcenter -propagate=false "/"
+```
 
 The config-gen.py script generates the commands needed to create these roles and assign them to the corresponding vCenter objects.
 
