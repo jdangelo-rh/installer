@@ -1,5 +1,5 @@
 
-## Required Privileges
+## Required Privileges (terraform)
 
 In order to use Terraform provider as non priviledged user, some Roles within vCenter must be assigned the following privileges:
 
