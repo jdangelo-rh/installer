@@ -254,104 +254,81 @@ def mac_address():
         print ("govc vm.network.change -vm /%s/vm/%s/%s -net '%s' -net.address %s ethernet-0" % (vsphere_datacenter, vm_folder, node, vm_network, node_mac[node]))
 
 
-# Verificacion de registros DNS directo y reverso
-def dns_verify_nodes(dns_ip):
-    for node in bootstrap_name+control_plane_names+compute_names:
-        dig_cmd = "dig %s.%s +short" % (node, cluster_domain) + " @" + dns_ip
-        
-        dig_proc = subprocess.Popen(dig_cmd, stdout=subprocess.PIPE, shell=True)
+def dns_forward(hostname, ip, server):
+    dig_cmd = "dig %s +short" % (hostname) + " @" + server
+    
+    dig_proc = subprocess.Popen(dig_cmd, stdout=subprocess.PIPE, shell=True)
 
-        found = False
+    found = False
 
-        print (dig_cmd + " <=> " + hostname_ip[node])
+    print (dig_cmd + " <=> " + ip)
 
-        for line in iter(dig_proc.stdout.readline, ""):
-            if line.strip() == hostname_ip[node]:
-              found = True
+    for line in iter(dig_proc.stdout.readline, ""):
+        if line.strip() == ip:
+          found = True
 
-        if found == False:
-            print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Fallo la verificacion de DNS del host: " + node)
-            print ("DNS Server: " + dns_ip)
-            #os.system("dig %s.%s +short" % (node, cluster_domain))
-            sys.exit(1)
+    if found == False:
+        print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Fallo la verificacion de DNS del host: " + node)
+        print ("DNS Server: " + server)
+        sys.exit(1)
 
-        digx_cmd = "dig -x %s +short" % (hostname_ip[node]) + " @" + dns_ip
+def dns_reverse(hostname, ip, server, condition):
+    digx_cmd = "dig -x %s +short" % (ip) + " @" + server
 
-        digx_proc = subprocess.Popen(digx_cmd, stdout=subprocess.PIPE, shell=True)
+    digx_proc = subprocess.Popen(digx_cmd, stdout=subprocess.PIPE, shell=True)
 
-        found = False
+    found = False
 
-        node_fqdn = node + "." + cluster_domain + "."
-        print (digx_cmd + " <=> " + node_fqdn)
+    print (digx_cmd + " <=> " + hostname)
 
-        for line in iter(digx_proc.stdout.readline, ""):
-            if line.strip() == node_fqdn:
-              found = True
+    for line in iter(digx_proc.stdout.readline, ""):
+        if hostname in line.strip():
+          found = True
 
-        if found == False:
-            print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Fallo la verificacion de DNS *reverso* del host: " + node)
-            print ("DNS Server: " + dns_ip)
-            #os.system("dig -x %s +short" % (hostname_ip[node]))
-            sys.exit(1)
-
-    print (bcolors.OKGREEN + " * OK * " + bcolors.ENDC + "Registros DNS A y reverso (server: " + dns_ip + ")\n")
-
-def dns_verify_etcd(dns_ip):
-    # Verificacion de registros etcd
-    print("\n## Verificacion de registros etcd")
-    for i in range(len(control_plane_names)):
-        dig_cmd = "dig etcd-%s.%s +short" % (i, cluster_domain) + " @" + dns_ip
-        dig_proc = subprocess.Popen(dig_cmd, stdout=subprocess.PIPE, shell=True)
-
-        print (dig_cmd)
-
-        found = False
-
-        for line in iter(dig_proc.stdout.readline, ""):
-            if line.strip() == hostname_ip[control_plane_names[i]]:
-              found = True
-
-        if found == False:
-          print (bcolors.FAIL + " * ERROR * " +  bcolors.ENDC + "Fallo la verificacion de DNS *reverso* del host: " + control_plane_names[i])
-          sys.exit(1)
-
-    print ("\nRegistros DNS etcd" + bcolors.OKGREEN + " * OK *" + bcolors.ENDC)
+    if found != condition:
+        print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Fallo la verificacion de DNS *reverso* del host: " + hostname)
+        print ("DNS Server: " + server)
+        if condition == False:
+            print("Los registros etcd no deben tener un reverso configurado")
+        sys.exit(1)
 
 ### Verificar que los registros DNS esten bien
 def dns_records():
     print("\n## Verificando registros DNS")
 
-    # Verificacion de registros A
     for dns_ip in dns_ips:
-        #print(dns_ip)
-        dns_verify_nodes(dns_ip)
+        print("\n## Verificacion de registros de los nodos")
+        for node in bootstrap_name + control_plane_names + compute_names:
+            dns_forward(node + "." + cluster_domain, hostname_ip[node], dns_ip)
+            dns_reverse(node + "." + cluster_domain, hostname_ip[node], dns_ip, True)
 
-    # Verificacion de registros A
-    for dns_ip in dns_ips:
-        #print(dns_ip)
-        dns_verify_etcd(dns_ip)
+        print("\n## Verificacion de registros etcd")
+        for i in range(len(control_plane_names)):
+            dns_forward("etcd-%s.%s" % (i, cluster_domain), hostname_ip[control_plane_names[i]], dns_ip)
+            dns_reverse("etcd-%s.%s" % (i, cluster_domain), hostname_ip[control_plane_names[i]], dns_ip, False)
+            
+        print (bcolors.OKGREEN + "\n * OK * " + bcolors.ENDC + "Registros DNS A y reverso (server: " + dns_ip + ")\n")
+        
+        # Verificacion de registros SRV
+        print("\n## Verificacion de registros SRV")
 
-    # Verificacion de registros SRV
-    print("\n## Verificacion de registros SRV")
-    dns_ip = dns_ips[0]
+        dig_cmd = "dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain + " @" + dns_ip
+        print (dig_cmd)
+        os.system(dig_cmd)
 
-    dig_cmd = "dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain + " @" + dns_ip
-    print (dig_cmd)
-    os.system(dig_cmd)
+        # Verificacion de APIs
+        print("\n## Verificacion de APIs")
+        dig_cmd = "dig api.%s +short" % cluster_domain + " @" + dns_ip
+        print (dig_cmd)
+        os.system(dig_cmd)
 
-    # Verificacion de APIs
-    print("\n## Verificacion de APIs")
-    dig_cmd = "dig api.%s +short" % cluster_domain + " @" + dns_ip
-    print (dig_cmd)
-    os.system(dig_cmd)
+        dig_cmd = "dig api-int.%s +short" % cluster_domain + " @" + dns_ip
+        print (dig_cmd)
+        os.system(dig_cmd)
 
-    dig_cmd = "dig api-int.%s +short" % cluster_domain + " @" + dns_ip
-    print (dig_cmd)
-    os.system(dig_cmd)
-
-    dig_cmd = "dig *.apps.%s +short" % cluster_domain + " @" + dns_ip
-    print (dig_cmd)
-    os.system(dig_cmd)
+        dig_cmd = "dig *.apps.%s +short" % cluster_domain + " @" + dns_ip
+        print (dig_cmd)
+        os.system(dig_cmd)
 
 
 ### Genero la configuracion del server DHCP
