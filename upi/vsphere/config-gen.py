@@ -169,7 +169,7 @@ govc role.create ocp-terraform-vm \\
     print("govc permissions.remove -principal %s '/'" % (vsphere_user))
 
     ### Genero los comandos para eliminar los roles
-    print("## Remove vCenter roles")
+    print("\n## Remove vCenter roles")
     print("govc role.remove ocp-terraform-vm")
     print("govc role.remove ocp-terraform-network")
     print("govc role.remove ocp-terraform-datastore")
@@ -185,6 +185,7 @@ def permissions_dynamic_provisioning():
 
     ### Genero los comandos para crear los roles
     print('''
+## Role creation
 # StorageProfile.View (Profile-driven storage view) at the vCenter level
 govc role.create k8s-system-read-and-spbm-profile-view \\
     StorageProfile.View
@@ -226,7 +227,7 @@ govc role.create manage-k8s-node-vms \\
     print("govc permissions.remove -principal %s '/%s/vm/%s'" % (vsphere_user, vsphere_datacenter, vm_folder))
 
     ### Genero los comandos para eliminar los roles
-    print("## Remove Dynamic Provisioning roles")
+    print("\n## Remove Dynamic Provisioning roles")
     print("govc role.remove k8s-system-read-and-spbm-profile-view")
     print("govc role.remove manage-k8s-volumes")
     print("govc role.remove manage-k8s-node-vms")
@@ -254,7 +255,7 @@ def mac_address():
 
 
 # Verificacion de registros DNS directo y reverso
-def dns_verify(dns_ip):
+def dns_verify_nodes(dns_ip):
     for node in bootstrap_name+control_plane_names+compute_names:
         dig_cmd = "dig %s.%s +short" % (node, cluster_domain) + " @" + dns_ip
         
@@ -293,22 +294,16 @@ def dns_verify(dns_ip):
             #os.system("dig -x %s +short" % (hostname_ip[node]))
             sys.exit(1)
 
-    print ("\nRegistros DNS A y reverso" + bcolors.OKGREEN + " * OK *" + bcolors.ENDC)
+    print (bcolors.OKGREEN + " * OK * " + bcolors.ENDC + "Registros DNS A y reverso (server: " + dns_ip + ")\n")
 
-
-### Verificar que los registros DNS esten bien
-def dns_records():
-    print("\n## Verificando registros DNS")
-
-    # Verificacion de registros A
-    for dns_ip in dns_ips:
-        #print(dns_ip)
-        dns_verify(dns_ip)
-
+def dns_verify_etcd(dns_ip):
     # Verificacion de registros etcd
     print("\n## Verificacion de registros etcd")
     for i in range(len(control_plane_names)):
-        dig_proc = subprocess.Popen("dig etcd-%s.%s +short" % (i, cluster_domain), stdout=subprocess.PIPE, shell=True)
+        dig_cmd = "dig etcd-%s.%s +short" % (i, cluster_domain) + " @" + dns_ip
+        dig_proc = subprocess.Popen(dig_cmd, stdout=subprocess.PIPE, shell=True)
+
+        print (dig_cmd)
 
         found = False
 
@@ -322,21 +317,41 @@ def dns_records():
 
     print ("\nRegistros DNS etcd" + bcolors.OKGREEN + " * OK *" + bcolors.ENDC)
 
+### Verificar que los registros DNS esten bien
+def dns_records():
+    print("\n## Verificando registros DNS")
+
+    # Verificacion de registros A
+    for dns_ip in dns_ips:
+        #print(dns_ip)
+        dns_verify_nodes(dns_ip)
+
+    # Verificacion de registros A
+    for dns_ip in dns_ips:
+        #print(dns_ip)
+        dns_verify_etcd(dns_ip)
+
     # Verificacion de registros SRV
     print("\n## Verificacion de registros SRV")
-    print ("dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain)
-    os.system("dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain)
+    dns_ip = dns_ips[0]
+
+    dig_cmd = "dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain + " @" + dns_ip
+    print (dig_cmd)
+    os.system(dig_cmd)
 
     # Verificacion de APIs
     print("\n## Verificacion de APIs")
-    print ("dig api.%s +short" % cluster_domain)
-    os.system("dig api.%s +short" % cluster_domain)
+    dig_cmd = "dig api.%s +short" % cluster_domain + " @" + dns_ip
+    print (dig_cmd)
+    os.system(dig_cmd)
 
-    print ("dig api-int.%s +short" % cluster_domain)
-    os.system("dig api-int.%s +short" % cluster_domain)
+    dig_cmd = "dig api-int.%s +short" % cluster_domain + " @" + dns_ip
+    print (dig_cmd)
+    os.system(dig_cmd)
 
-    print ("dig *.apps.%s +short" % cluster_domain)
-    os.system("dig *.apps.%s +short" % cluster_domain)
+    dig_cmd = "dig *.apps.%s +short" % cluster_domain + " @" + dns_ip
+    print (dig_cmd)
+    os.system(dig_cmd)
 
 
 ### Genero la configuracion del server DHCP
