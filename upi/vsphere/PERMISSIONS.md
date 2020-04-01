@@ -1,4 +1,3 @@
-
 ## Required Privileges (terraform)
 
 In order to use Terraform provider as non priviledged user, some Roles within vCenter must be assigned the following privileges:
@@ -41,7 +40,7 @@ ocp-terraform-datastore | Datastore | No | The Datastore where the VMs disk0 wil
 ocp-terraform-resource | Resource Pool |  No | The Resource Pool the VMs will we added to
 ocp-terraform-vcenter | vCenter | No | Profile-driven storage view
 
-Example:
+Command line example:
 ```
 # CLI Role creation
 govc role.create ocp-terraform-network Network.Assign
@@ -68,12 +67,18 @@ govc role.create ocp-terraform-vm \
 	VirtualMachine.Provisioning.PromoteDisks VirtualMachine.Provisioning.PutVmFiles VirtualMachine.Provisioning.ReadCustSpecs
 
 # CLI Permissions set
-govc permissions.set -principal ocp-terraform@vsphere.local -role ocp-terraform-vm -propagate=true "/Datacenter/vm/openshift/ocp"
-govc permissions.set -principal ocp-terraform@vsphere.local -role ocp-terraform-vm -propagate=false "/Datacenter/vm/templates/rhcos"
-govc permissions.set -principal ocp-terraform@vsphere.local -role ocp-terraform-network -propagate=false "/Datacenter/network/VM Network"
-govc permissions.set -principal ocp-terraform@vsphere.local -role ocp-terraform-datastore -propagate=false "/Datacenter/datastore/Datastore"
-govc permissions.set -principal ocp-terraform@vsphere.local -role ocp-terraform-resource -propagate=false "/Datacenter/host/Cluster/Resources/openshift"
-govc permissions.set -principal ocp-terraform@vsphere.local -role ocp-terraform-vcenter -propagate=false "/"
+$USER = "ocp-terraform@vsphere.local"
+$FOLDER = "openshift/ocp"
+$DATACENTER = "Datacenter"
+$DATASTORE = "Datastore"
+$NETWORK = "VM Network"
+$RESOURCE = "openshift"
+govc permissions.set -principal $USER -role ocp-terraform-vm -propagate=true "/$DATACENTER/vm/$FOLDER"
+govc permissions.set -principal $USER -role ocp-terraform-vm -propagate=false "/$DATACENTER/vm/templates/rhcos"
+govc permissions.set -principal $USER -role ocp-terraform-network -propagate=false "/$DATACENTER/network/$NETWORK"
+govc permissions.set -principal $USER -role ocp-terraform-datastore -propagate=false "/$DATACENTER/datastore/$DATASTORE"
+govc permissions.set -principal $USER -role ocp-terraform-resource -propagate=false "/$DATACENTER/host/Cluster/Resources/$RESOURCE"
+govc permissions.set -principal $USER -role ocp-terraform-vcenter -propagate=false "/"
 ```
 
 The config-gen.py script generates the commands needed to create these roles and assign them to the corresponding vCenter objects.
@@ -82,6 +87,47 @@ These settings have been tested with:
 - [vSphere 6.7](https://pubs.vmware.com/vsphere-60/index.jsp?topic=%2Fcom.vmware.vsphere.security.doc%2FGUID-18071E9A-EED1-4968-8D51-E0B4F526FDA3.html)
 - [vSphere 6.0](https://pubs.vmware.com/vsphere-60/index.jsp?topic=%2Fcom.vmware.vsphere.security.doc%2FGUID-18071E9A-EED1-4968-8D51-E0B4F526FDA3.html)
 - [vSphere 5.5](https://pubs.vmware.com/vsphere-55/index.jsp?topic=%2Fcom.vmware.vsphere.security.doc%2FGUID-18071E9A-EED1-4968-8D51-E0B4F526FDA3.html). 
+
+## Required Privileges (dynamic provisioning)
+[Permissions | vSphere Storage for Kubernetes](https://vmware.github.io/vsphere-storage-for-kubernetes/documentation/vcp-roles.html)
+
+Command line example:
+```
+$USER = "ocp-dynamic-provisioning@vsphere.local"
+$FOLDER = "openshift/ocp"
+$DATACENTER = "Datacenter"
+$DATASTORE = "Datastore"
+$NETWORK = "VM Network"
+
+# StorageProfile.View (Profile-driven storage view) at the vCenter level
+govc role.create k8s-system-read-and-spbm-profile-view StorageProfile.View
+
+# Low level file operations on the datastore
+govc role.create manage-k8s-volumes Datastore.AllocateSpace Datastore.FileManagement
+
+# Virtual Machine Privileges
+govc role.create manage-k8s-node-vms \
+	Resource.AssignVMToPool \
+	VirtualMachine.Config.AddExistingDisk \
+	VirtualMachine.Config.AddNewDisk \
+	VirtualMachine.Config.AddRemoveDevice \
+	VirtualMachine.Config.RemoveDisk \
+	VirtualMachine.Inventory.Create \
+	VirtualMachine.Inventory.Delete \
+	VirtualMachine.Config.Settings
+
+# Read-only permissions
+govc permissions.set -principal $USER -role ReadOnly -propagate=false "/$DATACENTER"
+govc permissions.set -principal $USER -role ReadOnly -propagate=false "/$DATACENTER/datastore/$DATASTORE"
+govc permissions.set -principal $USER -role ReadOnly -propagate=false "/$DATACENTER/host/$HOST"
+govc permissions.set -principal $USER -role ReadOnly -propagate=false "/$DATACENTER/vm/$FOLDER"
+govc permissions.set -principal $USER -role ReadOnly -propagate=false "/$DATACENTER/network/$NETWORK"
+
+govc permissions.set -principal $USER -role k8s-system-read-and-spbm-profile-view -propagate=false
+govc permissions.set -principal $USER -role manage-k8s-volumes -propagate=false /$DATACENTER/datastore/$DATASTORE
+govc permissions.set -principal $USER -role manage-k8s-node-vms -propagate=true /$DATACENTER/host/$HOST
+govc permissions.set -principal $USER -role manage-k8s-node-vms -propagate=true /$DATACENTER/vm/$FOLDER
+```
 
 For additional information on roles and permissions, please refer to official VMware documentation:
 - [Required Privileges for Common Tasks](https://docs.vmware.com/en/VMware-vSphere/6.7/com.vmware.vsphere.security.doc/GUID-4D0F8E63-2961-4B71-B365-BBFA24673FDB.html)
