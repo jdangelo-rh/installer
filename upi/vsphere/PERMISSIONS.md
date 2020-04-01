@@ -93,11 +93,7 @@ These settings have been tested with:
 
 Command line example:
 ```
-$USER = "ocp-dynamic-provisioning@vsphere.local"
-$FOLDER = "openshift/ocp"
-$DATACENTER = "Datacenter"
-$DATASTORE = "Datastore"
-$NETWORK = "VM Network"
+# CLI Role creation
 
 # StorageProfile.View (Profile-driven storage view) at the vCenter level
 govc role.create k8s-system-read-and-spbm-profile-view StorageProfile.View
@@ -115,6 +111,13 @@ govc role.create manage-k8s-node-vms \
 	VirtualMachine.Inventory.Create \
 	VirtualMachine.Inventory.Delete \
 	VirtualMachine.Config.Settings
+
+# CLI Permissions set
+$USER = "ocp-dynamic-provisioning@vsphere.local"
+$FOLDER = "openshift/ocp"
+$DATACENTER = "Datacenter"
+$DATASTORE = "Datastore"
+$NETWORK = "VM Network"
 
 # Read-only permissions
 govc permissions.set -principal $USER -role ReadOnly -propagate=false "/$DATACENTER"
