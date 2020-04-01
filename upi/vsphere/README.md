@@ -52,8 +52,9 @@ govc about
 ```
 
 If you don't have a Folder already then you might want to create one
+(The folder must have the same name as the OCP4 cluster)
 ```
-govc folder.create /Datacenter/vm/Production/ocp-folder
+govc folder.create /Datacenter/vm/Production/ocp4
 ```
 
 If you don't have a Resource Pool already then you might want to create one
@@ -61,7 +62,7 @@ If you don't have a Resource Pool already then you might want to create one
 govc pool.create /Datacenter/host/Cluster/Resources/openshift
 ```
 
-List resource pools and get their ID (needed for terraform)
+List Resource Pools and get their ID (needed for terraform)
 ```
 for ResourcePool in $(govc find / -type p); do govc ls -l -i $ResourcePool; done
 ResourcePool:resgroup-8 /Datacenter/host/Cluster/Resources
@@ -88,10 +89,10 @@ govc vm.markastemplate /Datacenter/vm/templates/rhcos-4.3.8
 # Build the Cluster
 Download the OpenShift client
 ```
-curl -O https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.3.1.tar.gz
-curl -O https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux-4.3.1.tar.gz
-tar xzvf openshift-install-linux-4.3.1.tar.gz
-tar xzvf openshift-client-linux-4.3.1.tar.gz
+curl -O https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.3.8.tar.gz
+curl -O https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux-4.3.8.tar.gz
+tar xzvf openshift-install-linux-4.3.8.tar.gz
+tar xzvf openshift-client-linux-4.3.8.tar.gz
 cp openshift-install /usr/local/bin
 cp oc /usr/local/bin
 ```
