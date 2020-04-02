@@ -514,10 +514,6 @@ host %s {
 
 ### Funcion prepara los archivos ignition
 def prepare_ignition():
-    print(control_plane_ignition)
-    
-    print(compute_ignition)
-    
     install_dir = raw_input("\nIngrese la ruta absoluta del directorio que contiene los ignition files (ej: /root/ocp4): ")
     
     if install_dir == "":
