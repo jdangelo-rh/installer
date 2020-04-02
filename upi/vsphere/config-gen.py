@@ -59,7 +59,7 @@ def node_mac_map(node_mac):
             print(bcolors.FAIL + "\n * ERROR * " + bcolors.ENDC + "No se pudo obtener la MAC Address del nodo: " + node)
             print("\nVerifique que las credenciales del usuario para terraform en el archivo terraform.tfvars sean correctas.")
             print("Verifique que las VMs hayan sido creadas ya.\n")
-            #sys.exit(1)
+            sys.exit(1)
 
 
 ## Funcion que ejecuta los comandos para establecer los permisos
@@ -91,6 +91,11 @@ def permissions_terraform():
     print("\n### Please provide the credentials for the Admin user")
     vsphere_admin_user = raw_input('vCenter Admin User: ')
     vsphere_admin_password = getpass.getpass('vCenter Admin Password: ')
+    
+    if vsphere_admin_user == "" or vsphere_admin_password == "":
+        print("\nNo se ha ingresado el usuario o el password")
+        sys.exit(1)
+    
     os.environ['GOVC_USERNAME'] = vsphere_admin_user
     os.environ['GOVC_PASSWORD'] = vsphere_admin_password
     os.environ['GOVC_URL'] = vsphere_server
@@ -507,6 +512,67 @@ host %s {
         os.system(command)
 
 
+### Funcion prepara los archivos ignition
+def prepare_ignition():
+    print(control_plane_ignition)
+    
+    print(compute_ignition)
+    
+    install_dir = raw_input("\nIngrese la ruta absoluta del directorio que contiene los ignition files (ej: /root/ocp4): ")
+    
+    if install_dir == "":
+        print("\nAdios!")
+        sys.exit(1)
+    
+    #html_dir = raw_input("\nIngrese la ruta absoluta del directorio que contiene los ignition files (ej: /root/ocp4): ")
+    
+    #que copie el bootstrap.ign a un directorio de html (preguntar) // master.ign y worker.ign los ponga en el tfvars
+
+    filename = sys.argv[2]
+
+    input_file = open(filename, "r")
+
+    master_ignition = open(install_dir + "/master.ign", "r")
+    worker_ignition = open(install_dir + "/worker.ign", "r")
+    
+    output_file = open(filename + "~", "w")
+
+    print("\n## Procesando archivo: " + filename)
+    
+    output = True
+
+    for line in input_file:
+        if line.find("control_plane_ignition") != -1:
+            output_file.write(line)
+            for master_line in master_ignition:
+                output_file.write(master_line)
+                output_file.write("\n")
+            output = False
+        
+        if line.find("compute_ignition") != -1:
+            output_file.write(line)
+            for worker_line in worker_ignition:
+                output_file.write(worker_line)
+                output_file.write("\n")
+            output = False
+        
+        #print(line.find("END_OF_MASTER_IGNITION"))
+        
+        if line.find("END_OF_MASTER_IGNITION") == 0 or line.find("END_OF_WORKER_IGNITION") == 0:
+            output = True
+            
+        if output == True:
+            output_file.write(line)
+    
+    input_file.close()
+    master_ignition.close()
+    worker_ignition.close()
+    output_file.close()
+    
+    os.system("\cp " + filename + "~ " + filename)
+
+
+
 ### Verficar que me hayan pasado los parametros correctos
 if len(sys.argv) != 3:
     print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Cantidad de parametros incorrecta")
@@ -517,6 +583,7 @@ Secciones:
  - power (Muestra los comandos de govc para encender y apagar las VMs)
  - mac   (Muestra los comandos de govc para fijar las MAC Address)
  - dns   (Valida las entradas DNS)
+ - ign   (Pega el contenido de los archivos master.ign y worker.ign en el archivo tfvars)
  - dhcp  (Genera la configuracion de un DHCP server [dhcpd])
 ''')
     sys.exit(1)
@@ -593,5 +660,8 @@ elif section == "dns":
 
 elif section == "dhcp":
     dhcp_server()
+
+elif section == "ign":
+    prepare_ignition()
 
 
