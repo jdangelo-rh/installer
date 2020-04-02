@@ -328,7 +328,7 @@ def power():
     for node in bootstrap_name+control_plane_names+compute_names:
         startup_commands.append("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, vm_folder, node))
 
-    ask_and_execute("Desea encender las VMs creadas?", "Encendido de las VMs creadas", shutdown_commands)
+    ask_and_execute("Desea encender las VMs creadas?", "Encendido de las VMs creadas", startup_commands)
 
 
 ## Esta funcion muestra los comandos para fijar las MAC Address actuales
