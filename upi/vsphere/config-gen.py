@@ -26,6 +26,41 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 
+## Creo mapping entre hostnames y direcciones IP
+def hostname_ip_map(hostname_ip):
+
+    for i in range(len(bootstrap_name)):
+        hostname_ip[bootstrap_name[i]] = bootstrap_ip[i]
+
+    for i in range(len(control_plane_names)):
+        hostname_ip[control_plane_names[i]] = control_plane_ips[i]
+
+    for i in range(len(compute_names)):
+        hostname_ip[compute_names[i]] = compute_ips[i]
+
+## Creo mapping entre nodos y MAC Address
+def node_mac_map(node_mac):
+
+    for node in bootstrap_name+control_plane_names+compute_names:
+        govc_proc = subprocess.Popen("govc device.info -vm='/%s/vm/%s/%s' ethernet-0" % (vsphere_datacenter, vm_folder, node), stdout=subprocess.PIPE, shell=True)
+
+        node_mac[node] = "00:00:00:00:00:00"
+
+        for line in iter(govc_proc.stdout.readline, ""):
+            #print line
+            mac_re = re.search("MAC Address", line)
+
+            if (mac_re):
+                mac_address = line.split(": ")[1].strip()
+                node_mac[node] = mac_address
+                
+        if node_mac[node] == "00:00:00:00:00:00":
+            print(bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "No se pudo obtener la MAC Address del nodo: " + node)
+            print("Verifique que las credenciales del usuario para terraform en el archivo terraform.tfvars sean correctas.")
+            print("Verifique que las VMs hayan sido creadas ya.\n")
+            sys.exit(1)
+
+
 def permissions_terraform():
     print("\n### Please provide the credentials for the Admin user")
     vsphere_admin_user = raw_input('vCenter Admin User: ')
@@ -247,6 +282,10 @@ def power():
 
 
 def mac_address():
+    # Obtengo los mappings de node <-> MAC Address
+    node_mac = {}
+    node_mac_map(node_mac)
+
     ### Genero los comandos para setar las MAC Address
     print("\n## Setear MAC addressess")
 
@@ -294,6 +333,10 @@ def dns_reverse(hostname, ip, server, condition):
 
 ### Verificar que los registros DNS esten bien
 def dns_records():
+    # Obtengo los mappings de hostname <-> IP
+    hostname_ip = {}
+    hostname_ip_map(hostname_ip)
+
     print("\n## Verificando registros DNS")
 
     for dns_ip in dns_ips:
@@ -333,6 +376,14 @@ def dns_records():
 
 ### Genero la configuracion del server DHCP
 def dhcp_server():
+    # Obtengo los mappings de hostname <-> IP
+    hostname_ip = {}
+    hostname_ip_map(hostname_ip)
+
+    # Obtengo los mappings de node <-> MAC Address
+    node_mac = {}
+    node_mac_map(node_mac)
+
     # Grabar un archivo dhpcd.conf y mostrar el comando para copiarlo a /etc + start/stop/enable del dhpcd + yum install (suponer que arrancamos de 0) + echo "" > /var/lib/dhpcd/lease
     print("\n## Configurando y levantando el DHCP server")
 
@@ -482,34 +533,6 @@ os.environ['GOVC_INSECURE'] = "1"
 
 os.environ['GOVC_USERNAME'] = vsphere_user
 os.environ['GOVC_PASSWORD'] = vsphere_password
-
-## Creo mapping entre hostnames y direcciones IP
-hostname_ip = {}
-
-for i in range(len(bootstrap_name)):
-    hostname_ip[bootstrap_name[i]] = bootstrap_ip[i]
-
-for i in range(len(control_plane_names)):
-    hostname_ip[control_plane_names[i]] = control_plane_ips[i]
-
-for i in range(len(compute_names)):
-    hostname_ip[compute_names[i]] = compute_ips[i]
-
-## Creo mapping entre nodos y MAC Address
-node_mac = {}
-
-for node in bootstrap_name+control_plane_names+compute_names:
-    govc_proc = subprocess.Popen("govc device.info -vm='/%s/vm/%s/%s' ethernet-0" % (vsphere_datacenter, vm_folder, node), stdout=subprocess.PIPE, shell=True)
-
-    node_mac[node] = "00:00:00:00:00:00"
-
-    for line in iter(govc_proc.stdout.readline, ""):
-        #print line
-        mac_re = re.search("MAC Address", line)
-
-        if (mac_re):
-            mac_address = line.split(": ")[1].strip()
-            node_mac[node] = mac_address
 
 section = sys.argv[1]
 
