@@ -349,7 +349,7 @@ def dns_forward(hostname, ip, server):
           found = True
 
     if found == False:
-        print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Fallo la verificacion de DNS del host: " + node)
+        print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Fallo la verificacion de DNS del host: " + hostname)
         print ("DNS Server: " + server)
         sys.exit(1)
 
