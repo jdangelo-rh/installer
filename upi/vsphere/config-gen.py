@@ -314,19 +314,24 @@ govc role.create manage-k8s-node-vms \\
     ask_and_execute("Desea eliminar los roles?", "Remove Dynamic Provisioning roles", del_roles)
 
 
+## Esta funcion apaga y enciende las VMs
 def power():
     ### Genero los comandos para apagar las VMs
-    print("\n## Apagado de las VMs")
+    shutdown_commands = []
     for node in bootstrap_name+control_plane_names+compute_names:
-        print("govc vm.power -off /%s/vm/%s/%s" % (vsphere_datacenter, vm_folder, node))
+        shutdown_commands.append("govc vm.power -off /%s/vm/%s/%s" % (vsphere_datacenter, vm_folder, node))
 
+    ask_and_execute("Desea apagar las VMs creadas?", "Apagado de las VMs creadas", shutdown_commands)
 
     ### Genero los comandos para encender las VMs
-    print("\n## Levantar las VMs")
+    startup_commands = []
     for node in bootstrap_name+control_plane_names+compute_names:
-        print("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, vm_folder, node))
+        startup_commands.append("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, vm_folder, node))
+
+    ask_and_execute("Desea encender las VMs creadas?", "Encendido de las VMs creadas", shutdown_commands)
 
 
+## Esta funcion muestra los comandos para fijar las MAC Address actuales
 def mac_address():
     # Obtengo los mappings de node <-> MAC Address
     node_mac = {}
@@ -334,7 +339,6 @@ def mac_address():
 
     ### Genero los comandos para setar las MAC Address
     print("\n## Setear MAC addressess")
-
     for node in node_mac:
         print ("govc vm.network.change -vm /%s/vm/%s/%s -net '%s' -net.address %s ethernet-0" % (vsphere_datacenter, vm_folder, node, vm_network, node_mac[node]))
 
