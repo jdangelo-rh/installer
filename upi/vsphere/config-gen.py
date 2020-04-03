@@ -648,6 +648,10 @@ if section == "perms":
     dialog_input = raw_input("\nDesea configurar los permisos del usuario de Dynamic Provisioning [y/N]: ")
     if dialog_input == 'y' or dialog_input == 'Y':
         permissions_dynamic_provisioning()
+    
+    ## Finalmente limpio el username y password para que no quede en memoria
+    os.environ['GOVC_USERNAME'] = ""
+    os.environ['GOVC_PASSWORD'] = ""
 
 elif section == "power":
     power()
