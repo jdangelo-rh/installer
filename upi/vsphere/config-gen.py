@@ -569,7 +569,7 @@ def prepare_ignition():
     worker_ignition.close()
     output_file.close()
     
-    os.system("\cp " + filename + "~ " + filename)
+    os.system("\mv " + filename + "~ " + filename)
 
 
 
