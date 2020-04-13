@@ -5,9 +5,6 @@ In order to use Terraform provider as non priviledged user, some Roles within vC
 - Datastore (Role: ocp-terraform-datastore)
   - Allocate space
   - Low level file operations
-- Folder (Role: ocp-terraform-vm)
-  - Create folder
-  - Delete folder
 - StorageProfile (Role: ocp-terraform-vcenter]
   - View
 - Network (Role: ocp-terraform-network)
@@ -15,8 +12,6 @@ In order to use Terraform provider as non priviledged user, some Roles within vC
 - Resource (Role: ocp-terraform-resource)
   - Assign vApp to resource pool
   - Assign virtual machine to resource pool
-  - Create resource pool
-  - Remove resource pool
 - vApp (Role: ocp-terraform-vm)
   - Clone
   - View OVF environment
@@ -39,6 +34,9 @@ ocp-terraform-network | VM Network | No | The VM Network the VMs will attach  to
 ocp-terraform-datastore | Datastore | No | The Datastore where the VMs disk0 will reside
 ocp-terraform-resource | Resource Pool |  No | The Resource Pool the VMs will we added to
 ocp-terraform-vcenter | vCenter | No | Profile-driven storage view
+Read-Only (System) | Virtual Switch | No | The Distributed Virtual Switch (\*)
+
+(\*) If the VM Network is going to be on a Distributed Virtual Switch then this permissions needs to be applied as well
 
 Command line example:
 ```
@@ -46,7 +44,7 @@ Command line example:
 govc role.create ocp-terraform-network Network.Assign
 govc role.create ocp-terraform-datastore Datastore.AllocateSpace Datastore.FileManagement 
 govc role.create ocp-terraform-vcenter StorageProfile.View
-govc role.create ocp-terraform-resource Resource.AssignVAppToPool Resource.AssignVMToPool Resource.CreatePool Resource.DeletePool
+govc role.create ocp-terraform-resource Resource.AssignVAppToPool Resource.AssignVMToPool
 govc role.create ocp-terraform-vm \
 	VApp.ApplicationConfig VApp.Clone VApp.ExtractOvfEnvironment VApp.InstanceConfig VApp.ResourceConfig \
 	Folder.Create Folder.Delete \
