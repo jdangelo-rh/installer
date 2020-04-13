@@ -51,22 +51,20 @@ govc ls
 govc about
 ```
 
-If you don't have a Folder already then you might want to create one
+If you don't have a Folder already then you have to create one
 (The folder must have the same name as the OCP4 cluster)
 ```
 govc folder.create /Datacenter/vm/Production/ocp4
 ```
 
-If you don't have a Resource Pool already then you might want to create one
+If you don't have a Resource Pool already then you have to create one
 ```
 govc pool.create /Datacenter/host/Cluster/Resources/openshift
 ```
 
-List Resource Pools and get their ID (needed for terraform)
+To see the available Resource Pools
 ```
-for ResourcePool in $(govc find / -type p); do govc ls -l -i $ResourcePool; done
-ResourcePool:resgroup-8 /Datacenter/host/Cluster/Resources
-ResourcePool:resgroup-54 /Datacenter/host/Cluster/Resources/openshift
+govc find / -type p
 ```
 
 Download the OVA and import it into the Template Repository
