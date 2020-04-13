@@ -1,3 +1,8 @@
+data "vsphere_resource_pool" "pool" {
+  name          = "${var.resource_pool}"
+  datacenter_id = "${var.datacenter_id}"
+}
+
 data "vsphere_datastore" "datastore" {
   name          = "${var.datastore}"
   datacenter_id = "${var.datacenter_id}"
@@ -17,7 +22,7 @@ resource "vsphere_virtual_machine" "vm" {
   count = "${var.instance_count}"
 
   name             = "${var.host_names[count.index]}"
-  resource_pool_id = "${var.resource_pool_id}"
+  resource_pool_id = "${data.vsphere_resource_pool.pool.id}"
   datastore_id     = "${data.vsphere_datastore.datastore.id}"
   num_cpus         = "${var.num_cpu[count.index]}"
   memory           = "${var.memory[count.index]}"

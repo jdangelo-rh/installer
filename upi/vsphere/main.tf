@@ -15,7 +15,7 @@ module "bootstrap" {
   host_names       = ["${var.bootstrap_name}"]
   instance_count   = "${var.bootstrap_complete ? 0 : 1}"
   ignition_url     = "${var.bootstrap_ignition_url}"
-  resource_pool_id = "${var.vm_resource_pool_id}"
+  resource_pool    = "${var.vm_resource_pool}"
   datastore        = "${var.vsphere_datastore}"
   folder           = "${var.vm_folder}"
   network          = "${var.vm_network}"
@@ -38,7 +38,7 @@ module "control_plane" {
   host_names       = ["${var.control_plane_names}"]
   instance_count   = "${var.control_plane_count}"
   ignition         = "${var.control_plane_ignition}"
-  resource_pool_id = "${var.vm_resource_pool_id}"
+  resource_pool    = "${var.vm_resource_pool}"
   folder           = "${var.vm_folder}"
   datastore        = "${var.vsphere_datastore}"
   network          = "${var.vm_network}"
@@ -61,7 +61,7 @@ module "compute" {
   host_names       = ["${var.compute_names}"]
   instance_count   = "${var.compute_count}"
   ignition         = "${var.compute_ignition}"
-  resource_pool_id = "${var.vm_resource_pool_id}"
+  resource_pool    = "${var.vm_resource_pool}"
   folder           = "${var.vm_folder}"
   datastore        = "${var.vsphere_datastore}"
   network          = "${var.vm_network}"
