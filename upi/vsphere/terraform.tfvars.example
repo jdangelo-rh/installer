@@ -36,7 +36,8 @@ vm_network = "VM Network"
 vm_folder = "Production/openshift/ocp-cluster"
 
 // The name of the Resource Pool where the OCP cluster VMs will be assigned
-vm_resource_pool = "Openshift"
+// The default Resource Pool for the vCenter Cluster is Resources
+vm_resource_pool = "Resources"
 
 // The machine_cidr where IP addresses will be assigned for cluster nodes.
 // Additionally, IPAM will assign IPs based on the network ID.
