@@ -87,10 +87,10 @@ govc vm.markastemplate /Datacenter/vm/templates/rhcos-4.3.8
 # Build the Cluster
 Download the OpenShift client
 ```
-curl -O https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.3.10.tar.gz
-curl -O https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux-4.3.10.tar.gz
-tar xzvf openshift-install-linux-4.3.10.tar.gz
-tar xzvf openshift-client-linux-4.3.10.tar.gz
+curl -O https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.3.12.tar.gz
+curl -O https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux-4.3.12.tar.gz
+tar xzvf openshift-install-linux-4.3.12.tar.gz
+tar xzvf openshift-client-linux-4.3.12.tar.gz
 cp openshift-install /usr/local/bin
 cp oc /usr/local/bin
 ```
