@@ -153,9 +153,14 @@ Create the ignition config files
 openshift-install create ignition-configs --dir=ocp4
 ```
 
-Copy the ignition config file from bootstrap to the httpd root
+Create a folder for the ignition files in your HTTP server root directory:
 ```
-cp ocp4/bootstrap.ign /var/www/html/
+mkdir /var/www/html/ignition
+```
+
+Copy the ignition config files to the HTTP server root directory:
+```
+cp ocp4/*.ign /var/www/html/ignition
 ```
 
 Clone the OpenShift installer repo
@@ -168,7 +173,7 @@ Change into the terraform scripts folder
 cd installer/upi/vsphere/
 ```
 
-Fill out a terraform.tfvars file with the ignition configs generated.
+Fill out a terraform.tfvars file with the vCenter, Networking and CPU / Memory configuration.
 There is an example terraform.tfvars file in this directory named terraform.tfvars.example.
 Read carefully this file to see how to complete the tfvars 
 ```
