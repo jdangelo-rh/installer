@@ -95,6 +95,10 @@ variable "dns_ips" {
   type    = "list"
 }
 
+variable "ignition_url" {
+  type = "string"
+}
+
 /////////
 // Bootstrap machine variables
 /////////
@@ -102,10 +106,6 @@ variable "dns_ips" {
 variable "bootstrap_complete" {
   type    = "string"
   default = "false"
-}
-
-variable "bootstrap_ignition_url" {
-  type = "string"
 }
 
 variable "bootstrap_ip" {
@@ -133,10 +133,6 @@ variable "control_plane_count" {
   default = "3"
 }
 
-variable "control_plane_ignition" {
-  type = "string"
-}
-
 variable "control_plane_ips" {
   type    = "list"
 }
@@ -161,10 +157,6 @@ variable "control_plane_cpus" {
 variable "compute_count" {
   type    = "string"
   default = "3"
-}
-
-variable "compute_ignition" {
-  type = "string"
 }
 
 variable "compute_ips" {

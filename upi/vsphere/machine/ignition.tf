@@ -65,7 +65,8 @@ data "ignition_config" "ign" {
   count = "${var.instance_count}"
 
   append {
-    source = "${var.ignition_url != "" ? var.ignition_url : local.ignition_encoded}"
+    source = "${var.ignition_url}" 
+    //source = "${var.ignition_url != "" ? var.ignition_url : local.ignition_encoded}"
   }
 
   systemd = [
