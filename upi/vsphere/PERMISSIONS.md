@@ -5,8 +5,8 @@ In order to use Terraform provider as non priviledged user, some Roles within vC
 - Datastore (Role: ocp-terraform-datastore)
   - Allocate space
   - Low level file operations
-- StorageProfile (Role: ocp-terraform-vcenter]
-  - View
+- Profile-driven storage (Role: ocp-terraform-vcenter]
+  - Profile-driven storage view
 - Network (Role: ocp-terraform-network)
   - Assign network
 - Resource (Role: ocp-terraform-resource)
