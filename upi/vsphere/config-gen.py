@@ -363,6 +363,26 @@ def dns_forward(hostname, ip, server):
         sys.exit(1)
 
 
+## Esta funcion realiza una validacion basica de la consulta de DNS directa
+def dns_check(hostname, server):
+    dig_cmd = "dig %s +short" % (hostname) + " @" + server
+    
+    dig_proc = subprocess.Popen(dig_cmd, stdout=subprocess.PIPE, shell=True)
+
+    found = False
+
+    print (dig_cmd)
+
+    for line in iter(dig_proc.stdout.readline, ""):
+        print(line.strip())
+        found = True
+
+    if found == False:
+        print (bcolors.FAIL + " * ERROR * " + bcolors.ENDC + "Fallo la verificacion de DNS del host: " + hostname)
+        print ("DNS Server: " + server)
+        sys.exit(1)
+
+
 ## Esta funcion valida la consulta de DNS reversa
 def dns_reverse(hostname, ip, server, condition):
     digx_cmd = "dig -x %s +short" % (ip) + " @" + server
@@ -406,24 +426,16 @@ def dns_records():
             
         print (bcolors.OKGREEN + "\n * OK * " + bcolors.ENDC + "Registros DNS A y reverso (server: " + dns_ip + ")\n")
         
+        # Verificacion de APIs
+        print("\n## Verificacion de APIs")
+        dns_check("api." + cluster_domain, dns_ip)
+        dns_check("api-int." + cluster_domain, dns_ip)
+        dns_check("*.apps." + cluster_domain, dns_ip)
+
         # Verificacion de registros SRV
         print("\n## Verificacion de registros SRV")
 
         dig_cmd = "dig _etcd-server-ssl._tcp.%s SRV +short" % cluster_domain + " @" + dns_ip
-        print (dig_cmd)
-        os.system(dig_cmd)
-
-        # Verificacion de APIs
-        print("\n## Verificacion de APIs")
-        dig_cmd = "dig api.%s +short" % cluster_domain + " @" + dns_ip
-        print (dig_cmd)
-        os.system(dig_cmd)
-
-        dig_cmd = "dig api-int.%s +short" % cluster_domain + " @" + dns_ip
-        print (dig_cmd)
-        os.system(dig_cmd)
-
-        dig_cmd = "dig *.apps.%s +short" % cluster_domain + " @" + dns_ip
         print (dig_cmd)
         os.system(dig_cmd)
 
@@ -667,5 +679,6 @@ elif section == "dhcp":
 
 elif section == "ign":
     prepare_ignition()
+
 
 
