@@ -52,7 +52,7 @@ def get_nodes():
     for i in range(compute_count):
         nodes.append(compute_names[i])
         
-    print(nodes)
+    #print(nodes)
 
     return nodes
 
