@@ -39,10 +39,27 @@ def hostname_ip_map(hostname_ip):
         hostname_ip[compute_names[i]] = compute_ips[i]
 
 
+## Esta funcion obtiene la lista de nodos respetando el node count
+def get_nodes():
+
+    nodes = []
+    
+    nodes.append(bootstrap_name[0])
+    
+    for i in range(control_plane_count):
+        nodes.append(control_plane_names[i])
+    
+    for i in range(compute_count):
+        nodes.append(compute_names[i])
+        
+    print(nodes)
+
+    return nodes
+
 ## Creo mapping entre nodos y MAC Address
 def node_mac_map(node_mac):
 
-    for node in bootstrap_name+control_plane_names+compute_names:
+    for node in get_nodes():
         govc_proc = subprocess.Popen("govc device.info -vm='/%s/vm/%s/%s' ethernet-0" % (vsphere_datacenter, vm_folder, node), stdout=subprocess.PIPE, shell=True)
 
         node_mac[node] = "" # "00:00:00:00:00:00"
@@ -318,14 +335,14 @@ govc role.create manage-k8s-node-vms \\
 def power():
     ### Genero los comandos para apagar las VMs
     shutdown_commands = []
-    for node in bootstrap_name+control_plane_names+compute_names:
+    for node in get_nodes():
         shutdown_commands.append("govc vm.power -off /%s/vm/%s/%s" % (vsphere_datacenter, vm_folder, node))
 
     ask_and_execute("Desea apagar las VMs creadas?", "Apagado de las VMs creadas", shutdown_commands)
 
     ### Genero los comandos para encender las VMs
     startup_commands = []
-    for node in bootstrap_name+control_plane_names+compute_names:
+    for node in get_nodes():
         startup_commands.append("govc vm.power -on /%s/vm/%s/%s" % (vsphere_datacenter, vm_folder, node))
 
     ask_and_execute("Desea encender las VMs creadas?", "Encendido de las VMs creadas", startup_commands)
@@ -415,7 +432,7 @@ def dns_records():
 
     for dns_ip in dns_ips:
         print("\n## Verificacion de registros de los nodos")
-        for node in bootstrap_name + control_plane_names + compute_names:
+        for node in get_nodes():
             dns_forward(node + "." + cluster_domain, hostname_ip[node], dns_ip)
             dns_reverse(node + "." + cluster_domain, hostname_ip[node], dns_ip, True)
 
@@ -492,7 +509,7 @@ subnet %s netmask %s {
 
     dhcpd_conf_hosts = ""
 
-    for node in bootstrap_name+control_plane_names+compute_names:
+    for node in get_nodes():
         dhcpd_conf_hosts += \
         '''
 host %s {
