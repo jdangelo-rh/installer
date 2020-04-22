@@ -199,7 +199,7 @@ Wait for the bootstrapping to complete.
 Run `terraform apply -auto-approve -var 'bootstrap_complete=true'`.
 This will destroy the bootstrap VM.
 
-Run `openshift-install wait-for install-complete`. 
+Run `openshift-install --dir=ocp4 wait-for install-complete`. 
 Wait for the cluster install to finish.
 
 Enjoy your new OpenShift cluster.
