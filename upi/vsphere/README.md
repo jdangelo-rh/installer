@@ -163,6 +163,11 @@ Copy the ignition config files to the HTTP server root directory:
 cp ocp4/*.ign /var/www/html/ignition
 ```
 
+Ensure the files are accesible to the httpd server
+```
+chmod 644 /var/www/html/ignition/*
+```
+
 Clone the OpenShift installer repo
 ```
 git clone https://github.com/gojeaqui/installer.git
