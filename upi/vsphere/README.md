@@ -192,18 +192,18 @@ Run `terraform init` to initialize terraform, it will download the required plug
 
 Run `terraform plan` to see the changes that terraform is going to apply to the vCenter
 
-Run `terraform apply -auto-approve`.
+Run `terraform apply`.
 Terraform will create a folder in the vCenter with the name of the cluster and place the VMs inside that folder.
 It will also create a resource group with the same name.
 
-Run `./config-gen.py terraform.tfvars`.
+Run `./config-gen.py dhcp terraform.tfvars`.
 This script will generate a dhcpd.conf configuration and copy it to the /etc/dhcpd directory, just follow the script instructions.
 The script will test the DNS entries to see if they are correctly configured
 
 Run `openshift-install --dir=ocp4 wait-for bootstrap-complete`. 
 Wait for the bootstrapping to complete.
 
-Run `terraform apply -auto-approve -var 'bootstrap_complete=true'`.
+Run `terraform apply -var 'bootstrap_complete=true'`.
 This will destroy the bootstrap VM.
 
 Run `openshift-install --dir=ocp4 wait-for install-complete`. 
