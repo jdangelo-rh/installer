@@ -27,6 +27,11 @@ So, in order to add a 3rd worker node execute this terraform apply:
 terraform apply -target=module.compute.vsphere_virtual_machine.vm[2]
 ```
 
+Then, Configure the dhcp server:
+```
+config-gen.py dhcp terraform.tfvars
+```
+
 ### Terraform automatic process:
 Run config-gen.py add terraform.tfvars and follow the prompts, it will give you the terraform apply command to run
 
